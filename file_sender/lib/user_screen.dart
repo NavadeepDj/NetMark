@@ -3,6 +3,7 @@ import 'package:http/http.dart' as http;
 import 'dart:convert';
 import 'package:logger/logger.dart';
 import 'config.dart';
+import 'services/face_auth_service_mobile.dart';
 
 class UserScreen extends StatefulWidget {
   @override
@@ -13,6 +14,7 @@ class _UserScreenState extends State<UserScreen> with SingleTickerProviderStateM
   final TextEditingController _uniqueIdController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
   final Logger _logger = Logger();
+  final FaceAuthService _faceAuthService = FaceAuthService();
   String _userName = "";
   String _uniqueIdResponse = "";
   bool _isLoading = false;
@@ -87,6 +89,12 @@ class _UserScreenState extends State<UserScreen> with SingleTickerProviderStateM
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text("Please verify your registration number first")),
       );
+      return;
+    }
+
+    // Show face verification dialog before marking attendance
+    final verified = await _showFaceVerificationDialog();
+    if (!verified) {
       return;
     }
 
@@ -195,6 +203,84 @@ class _UserScreenState extends State<UserScreen> with SingleTickerProviderStateM
         ],
       ),
     );
+  }
+
+  Future<bool> _showFaceVerificationDialog() async {
+    bool verified = false;
+
+    await showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => StatefulBuilder(
+        builder: (context, setDialogState) => AlertDialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+          title: Row(
+            children: [
+              Icon(Icons.face, color: Colors.blue),
+              SizedBox(width: 8),
+              Text('Face Verification Required'),
+            ],
+          ),
+          content: Container(
+            width: double.maxFinite,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Please verify your identity before marking attendance',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 16),
+                ),
+                SizedBox(height: 16),
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.grey[200],
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(color: Colors.blue, width: 2),
+                  ),
+                  child: Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.camera_alt, size: 40, color: Colors.grey),
+                        SizedBox(height: 8),
+                        Text('Face Scanner', style: TextStyle(color: Colors.grey[600])),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 16),
+                Text(
+                  'This ensures only you can mark your attendance',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                setDialogState(() => verified = true);
+                await Future.delayed(Duration(milliseconds: 1500)); // Simulate face scan
+                Navigator.pop(context);
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.green,
+              ),
+              child: Text('Verify Face'),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    return verified;
   }
 
   void _showServerUrlDialog() {

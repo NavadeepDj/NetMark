@@ -277,15 +277,18 @@
 // }
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'firebase_options.dart';
 import 'login_page.dart';
 import 'upload_csv_screen.dart';
 import 'user_screen.dart';
-import 'firebase_options.dart';
 import 'student_list_screen.dart';
+import 'screens/signup_screen.dart';
+import 'screens/face_verification_screen.dart';
+import 'services/face_auth_service_mobile.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  
+
   try {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
@@ -294,7 +297,9 @@ void main() async {
   } catch (e) {
     print('Error initializing Firebase: $e');
   }
-  
+
+  print('Face Recognition Attendance System Starting...');
+
   runApp(MyApp());
 }
 
@@ -311,7 +316,7 @@ class MyApp extends StatelessWidget {
           elevation: 4,
           backgroundColor: Colors.blue,
         ),
-        cardTheme: CardTheme(
+        cardTheme: CardThemeData(
           elevation: 4,
           margin: EdgeInsets.symmetric(vertical: 8),
           shape: RoundedRectangleBorder(
@@ -327,11 +332,14 @@ class MyApp extends StatelessWidget {
           ),
         ),
       ),
-      initialRoute: '/login',
+      initialRoute: '/auth_check',
       routes: {
+        '/auth_check': (context) => AuthCheck(),
         '/login': (context) => LoginPage(),
         '/admin': (context) => UploadCSVScreen(),
         '/user': (context) => UserScreen(),
+        '/signup': (context) => SignupScreen(),
+        '/face_verification': (context) => FaceVerificationScreen(),
       },
       onGenerateRoute: (settings) {
         if (settings.name == '/student_list') {
@@ -345,6 +353,95 @@ class MyApp extends StatelessWidget {
         }
         return null;
       },
+    );
+  }
+}
+
+class AuthCheck extends StatefulWidget {
+  @override
+  _AuthCheckState createState() => _AuthCheckState();
+}
+
+class _AuthCheckState extends State<AuthCheck> {
+  final FaceAuthService _faceAuthService = FaceAuthService();
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAuthStatus();
+  }
+
+  Future<void> _checkAuthStatus() async {
+    try {
+      await _faceAuthService.initialize();
+      final isRegistered = await _faceAuthService.isUserRegistered();
+
+      if (isRegistered) {
+        // User is registered, navigate to face verification
+        Navigator.pushReplacementNamed(context, '/face_verification');
+      } else {
+        // New user, navigate to login
+        Navigator.pushReplacementNamed(context, '/login');
+      }
+    } catch (e) {
+      // Error checking auth status, navigate to login
+      Navigator.pushReplacementNamed(context, '/login');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [Colors.blue[700]!, Colors.blue[500]!],
+          ),
+        ),
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.face,
+                size: 80,
+                color: Colors.white,
+              ),
+              SizedBox(height: 16),
+              Text(
+                'KARE FAST',
+                style: TextStyle(
+                  fontSize: 32,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+              SizedBox(height: 8),
+              Text(
+                'Face Recognition Attendance System',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white70,
+                ),
+              ),
+              SizedBox(height: 32),
+              CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              SizedBox(height: 16),
+              Text(
+                'Initializing...',
+                style: TextStyle(
+                  fontSize: 16,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }

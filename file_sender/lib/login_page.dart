@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:logger/logger.dart';
 
 class LoginPage extends StatefulWidget {
@@ -8,7 +7,6 @@ class LoginPage extends StatefulWidget {
 }
 
 class _LoginPageState extends State<LoginPage> {
-  final FirebaseAuth _auth = FirebaseAuth.instance;
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   String _errorMessage = '';
@@ -28,7 +26,7 @@ class _LoginPageState extends State<LoginPage> {
 
   Future<void> _signInAdmin(BuildContext context) async {
     _logger.i('Starting admin sign in process');
-    
+
     setState(() {
       _errorMessage = '';
     });
@@ -41,90 +39,38 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    try {
-      _logger.d('Setting loading state to true');
-      setState(() => _isLoading = true);
+    // Simple admin validation (for demo)
+    if (_emailController.text == 'admin@kare.edu' && _passwordController.text == 'admin123') {
+      _logger.i('Admin login successful');
 
-      _logger.i('Attempting to sign in with email: ${_emailController.text}');
-      
-      // Sign out any existing user first
-      await _auth.signOut();
-      
-      // Attempt to sign in
-      final userCredential = await _auth.signInWithEmailAndPassword(
-        email: _emailController.text.trim(),
-        password: _passwordController.text.trim(),
+      setState(() => _isLoading = false);
+
+      // Clear the text fields
+      _emailController.clear();
+      _passwordController.clear();
+
+      // Close the dialog first
+      Navigator.of(context).pop();
+
+      // Show success message
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Admin login successful!')),
       );
 
-      _logger.d('Firebase auth response received');
-
-      // Check if sign in was successful
-      if (userCredential.user != null) {
-        _logger.i('Successfully signed in user: ${userCredential.user!.email}');
-        
-        if (!context.mounted) return;
-
-        setState(() => _isLoading = false);
-        
-        // Clear the text fields
-        _emailController.clear();
-        _passwordController.clear();
-        
-        // Close the dialog first
-        Navigator.of(context).pop();
-        
-        // Show success message
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Login successful!')),
-        );
-        
-        // Navigate after a short delay
-        if (!context.mounted) return;
-        
-        Future.delayed(Duration(milliseconds: 100), () {
-          if (context.mounted) {
-            Navigator.pushReplacementNamed(context, '/admin');
-          }
-        });
-      }
-    } on FirebaseAuthException catch (e) {
-      _logger.e('Firebase Auth Exception: ${e.message}', error: e, stackTrace: StackTrace.current);
-      
-      if (!context.mounted) return;
-
-      setState(() {
-        _isLoading = false;
-        switch (e.code) {
-          case 'user-not-found':
-            _errorMessage = 'No user found with this email.';
-            break;
-          case 'wrong-password':
-            _errorMessage = 'Wrong password provided.';
-            break;
-          case 'invalid-email':
-            _errorMessage = 'Invalid email address.';
-            break;
-          case 'user-disabled':
-            _errorMessage = 'This user account has been disabled.';
-            break;
-          default:
-            _errorMessage = 'An error occurred: ${e.message}';
+      // Navigate after a short delay
+      Future.delayed(Duration(milliseconds: 100), () {
+        if (context.mounted) {
+          Navigator.pushReplacementNamed(context, '/admin');
         }
       });
-      
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(_errorMessage)),
-      );
-    } catch (e, stackTrace) {
-      _logger.e('Unexpected error during login: $e', error: e, stackTrace: stackTrace);
-      
-      if (!context.mounted) return;
+    } else {
+      _logger.w('Invalid admin credentials');
 
       setState(() {
         _isLoading = false;
-        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _errorMessage = 'Invalid email or password. Try admin@kare.edu / admin123';
       });
-      
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(_errorMessage)),
       );
@@ -237,10 +183,48 @@ class _LoginPageState extends State<LoginPage> {
                               ),
                             ),
                             onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/user');
+                              Navigator.pushReplacementNamed(context, '/signup');
                             },
                             child: Text(
-                              "User Login",
+                              "User Sign Up",
+                              style: TextStyle(
+                                fontSize: 16,
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                        ),
+                        SizedBox(height: 16),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: BorderRadius.circular(30),
+                            gradient: LinearGradient(
+                              colors: [Colors.green[600]!, Colors.green[400]!],
+                            ),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.green.withOpacity(0.3),
+                                spreadRadius: 1,
+                                blurRadius: 8,
+                                offset: Offset(0, 4),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                            ),
+                            onPressed: () {
+                              Navigator.pushReplacementNamed(context, '/face_verification');
+                            },
+                            child: Text(
+                              "Existing User? Login",
                               style: TextStyle(
                                 fontSize: 16,
                                 color: Colors.white,
