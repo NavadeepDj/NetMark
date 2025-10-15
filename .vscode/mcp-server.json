@@ -1,0 +1,15 @@
+{
+  "mcpServers": {
+    "face-auth-server": {
+      "command": "dart",
+      "args": [
+        "run",
+        "bin/mcp_server.dart"
+      ],
+      "cwd": "${workspaceFolder}/file_sender",
+      "env": {
+        "FLUTTER_ROOT": "${env:FLUTTER_ROOT}"
+      }
+    }
+  }
+}

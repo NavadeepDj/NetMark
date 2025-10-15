@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logger/logger.dart';
-import '../services/face_auth_service_mobile.dart';
+import '../services/real_face_recognition_service.dart';
 import '../user_screen.dart';
 
 class FaceVerificationScreen extends StatefulWidget {
@@ -14,7 +14,7 @@ class FaceVerificationScreen extends StatefulWidget {
 
 class _FaceVerificationScreenState extends State<FaceVerificationScreen> with WidgetsBindingObserver {
   final Logger _logger = Logger();
-  final FaceAuthService _faceAuthService = FaceAuthService();
+  final RealFaceRecognitionService _faceAuthService = RealFaceRecognitionService();
 
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
@@ -57,7 +57,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
 
   Future<void> _initializeServices() async {
     try {
-      // Initialize face service
+      // Initialize real face recognition service
       await _faceAuthService.initialize();
 
       // Get current user info
@@ -83,7 +83,7 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       await _initializeCamera();
     } catch (e) {
       _logger.e('Error initializing services: $e');
-      _showErrorDialog('Initialization Error', 'Failed to initialize authentication service');
+      _showErrorDialog('Initialization Error', 'Failed to initialize real face recognition service');
     }
   }
 
@@ -144,15 +144,41 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       // Capture image
       final image = await _cameraController!.takePicture();
 
-      // Simulate face processing (replace with actual face embedding extraction)
-      await Future.delayed(Duration(milliseconds: 2000));
+      _logger.i('Camera picture captured for face verification...');
 
-      // Generate dummy current embedding (replace with actual face embedding extraction)
-      final currentEmbedding = List.generate(512, (index) =>
-          (index % 2 == 0 ? 0.5 : -0.5) + (index % 3) * 0.1 + (index * 0.01));
+      // Convert to XFile for easier handling
+      final xFile = XFile(image.path);
 
-      // Verify face
+      // Extract real face embedding using TFLite
+      final currentEmbedding = await _faceAuthService.extractFaceEmbeddingFromFile(xFile.path);
+
+      if (currentEmbedding == null) {
+        setState(() {
+          _isProcessing = false;
+          _isVerifying = false;
+          _errorMessage = 'No face detected or failed to extract face embedding. Please try again.';
+        });
+        _logger.w('Failed to extract face embedding for verification');
+        return;
+      }
+
+      // Verify face with stored embedding
+      if (_storedEmbedding == null) {
+        setState(() {
+          _isProcessing = false;
+          _isVerifying = false;
+          _errorMessage = 'No face data available. Please register first.';
+        });
+        return;
+      }
+
+      // Calculate similarity for logging
+      final similarity = _faceAuthService.calculateCosineSimilarity(currentEmbedding, _storedEmbedding!);
+      _logger.i('Face similarity calculated: $similarity');
+
       final isVerified = await _faceAuthService.verifyFace(currentEmbedding, _storedEmbedding!);
+
+      _logger.i('Real face verification result: $isVerified (similarity: $similarity)');
 
       if (isVerified) {
         _logger.i('Face verification successful for $_regNo');
@@ -161,11 +187,11 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
         _handleVerificationFailure();
       }
     } catch (e) {
-      _logger.e('Error during face verification: $e');
+      _logger.e('Error during real face verification: $e');
       setState(() {
         _isProcessing = false;
         _isVerifying = false;
-        _errorMessage = 'Verification failed. Please try again.';
+        _errorMessage = 'Verification failed: $e';
       });
     }
   }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
 import 'package:logger/logger.dart';
-import '../services/face_auth_service_mobile.dart';
+import '../services/real_face_recognition_service.dart';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({Key? key}) : super(key: key);
@@ -16,7 +16,7 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
   final _nameController = TextEditingController();
   final _regNoController = TextEditingController();
   final Logger _logger = Logger();
-  final FaceAuthService _faceAuthService = FaceAuthService();
+  final RealFaceRecognitionService _faceAuthService = RealFaceRecognitionService();
 
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
@@ -60,10 +60,10 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
   Future<void> _initializeFaceService() async {
     try {
       await _faceAuthService.initialize();
-      _logger.i('Face service initialized');
+      _logger.i('Real face recognition service initialized');
     } catch (e) {
-      _logger.e('Error initializing face service: $e');
-      _showErrorDialog('Initialization Error', 'Failed to initialize face recognition service');
+      _logger.e('Error initializing real face recognition service: $e');
+      _showErrorDialog('Initialization Error', 'Failed to initialize real face recognition service');
     }
   }
 
@@ -120,15 +120,25 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
     });
 
     try {
+      // Take picture from camera
       final image = await _cameraController!.takePicture();
 
-      // Convert image to CameraImage for face processing
-      // Note: In a real implementation, you might need to handle image conversion differently
-      // For now, we'll simulate face detection success
-      await Future.delayed(Duration(milliseconds: 1000)); // Simulate processing
+      _logger.i('Camera picture captured, processing face recognition...');
 
-      // Generate dummy embedding (replace with actual face embedding extraction)
-      final embedding = List.generate(512, (index) => (index % 2 == 0 ? 0.5 : -0.5) + (index % 3) * 0.1);
+      // Convert to XFile for easier handling
+      final xFile = XFile(image.path);
+
+      // Extract real face embedding using TFLite
+      final embedding = await _faceAuthService.extractFaceEmbeddingFromFile(xFile.path);
+
+      if (embedding == null) {
+        setState(() {
+          _isProcessing = false;
+          _errorMessage = 'No face detected or failed to extract face embedding. Please try again.';
+        });
+        _logger.w('Failed to extract face embedding');
+        return;
+      }
 
       setState(() {
         _capturedEmbedding = embedding;
@@ -136,10 +146,10 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
         _isProcessing = false;
       });
 
-      _logger.i('Face captured successfully');
+      _logger.i('Real face embedding extracted successfully (${embedding.length} dimensions)');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Face captured successfully!'),
+          content: Text('Face registered successfully!'),
           backgroundColor: Colors.green,
         ),
       );
@@ -147,13 +157,13 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
       _logger.e('Error capturing face: $e');
       setState(() {
         _isProcessing = false;
-        _errorMessage = 'Failed to capture face. Please try again.';
+        _errorMessage = 'Failed to capture face: $e';
       });
     }
   }
 
   Future<void> _registerUser() async {
-    if (!_formKey.currentState!.validate() || _capturedEmbedding == null) {
+    if (_formKey.currentState?.validate() != true || _capturedEmbedding == null) {
       return;
     }
 
@@ -259,6 +269,7 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
   }
 
   List<Step> _getSteps() {
+    // Remove the null check that's causing infinite loading
     return [
       Step(
         title: Text('Personal Info'),
@@ -444,8 +455,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
         ),
         isActive: _currentStep >= 2,
       ),
-    ];
-  }
+      ];
+    }
 
   void _nextStep() {
     if (_currentStep < _getSteps().length - 1) {
@@ -508,7 +519,7 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
                         Spacer(),
                         if (_currentStep < _getSteps().length - 1)
                           ElevatedButton(
-                            onPressed: _currentStep == 0 && !_formKey.currentState!.validate()
+                            onPressed: _currentStep == 0 && (_formKey.currentState?.validate() != true)
                                 ? null
                                 : details.onStepContinue,
                             child: Text('Next'),

@@ -25,7 +25,7 @@ class FaceAuthService {
         final deviceInfo = DeviceInfoPlugin();
         try {
           final androidInfo = await deviceInfo.androidInfo;
-          _deviceId = androidInfo.androidId; // stable ANDROID_ID
+          _deviceId = androidInfo.id; // stable ANDROID_ID
         } catch (_) {
           try {
             final iosInfo = await deviceInfo.iosInfo;
