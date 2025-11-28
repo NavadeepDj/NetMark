@@ -1,6 +1,6 @@
 {
-    "name": "file_sender",
-    "short_name": "file_sender",
+    "name": "NetMark",
+    "short_name": "NetMark",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

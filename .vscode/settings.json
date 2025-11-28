@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
     "dart.mcpServer": true,
     "mcp.servers": {
         "face-auth-server": {
@@ -11,4 +12,8 @@
             "description": "Face Authentication MCP Server - Manage users, attendance, and face recognition"
         }
     }
+=======
+    "cmake.sourceDirectory": "D:/FAST_Attendance/file_sender/linux",
+    "java.configuration.updateBuildConfiguration": "automatic"
+>>>>>>> f3072e0029920c28af718e637c10632f201321b6
 }

@@ -13,6 +13,18 @@ subprojects {
     project.evaluationDependsOn(":app")
 }
 
+// Workaround: some third-party Android library modules (e.g., :tflite_flutter) may miss
+// a namespace on older versions, which AGP 8.x requires. Inject a namespace to allow build.
+subprojects { Project p ->
+    if (p.name == "tflite_flutter") {
+        p.afterEvaluate {
+            if (p.hasProperty("android") && p.android.hasProperty("namespace") == false) {
+                p.android.namespace = "com.thirdparty.tflite_flutter"
+            }
+        }
+    }
+}
+
 tasks.register("clean", Delete) {
     delete rootProject.buildDir
 }

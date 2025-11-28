@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-import 'student_list_screen.dart';
 import 'dart:async';
 import 'config.dart';
 
 class UploadCSVScreen extends StatefulWidget {
+  const UploadCSVScreen({super.key});
+
   @override
   _UploadCSVScreenState createState() => _UploadCSVScreenState();
 }
 
-class _UploadCSVScreenState extends State<UploadCSVScreen> {
+class _UploadCSVScreenState extends State<UploadCSVScreen>
+    with TickerProviderStateMixin {
   String? _filePath;
   bool _isUploading = false;
   String _serverResponse = "";
@@ -21,16 +23,54 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
   Timer? _statsTimer;
   final _urlController = TextEditingController();
   String _registrationNumber = "";
+  late AnimationController _pulseController;
+  late Animation<double> _pulseAnimation;
+  bool _isRefreshing = false;
+  DateTime? _lastUpdated;
 
   @override
   void initState() {
     super.initState();
     _fetchStats();
-    // Refresh stats every 30 seconds
-    // _statsTimer = Timer.periodic(Duration(seconds: 30), (timer) => _fetchStats());
+    // Refresh stats every 3 seconds for live updates
+    _statsTimer =
+        Timer.periodic(Duration(seconds: 3), (timer) => _fetchStats());
+
+    // Initialize pulse animation for live indicator
+    _pulseController = AnimationController(
+      duration: Duration(seconds: 2),
+      vsync: this,
+    );
+    _pulseAnimation = Tween<double>(
+      begin: 0.8,
+      end: 1.2,
+    ).animate(CurvedAnimation(
+      parent: _pulseController,
+      curve: Curves.easeInOut,
+    ));
+    _pulseController.repeat(reverse: true);
+  }
+
+  String _formatTime(DateTime dateTime) {
+    final now = DateTime.now();
+    final difference = now.difference(dateTime);
+
+    if (difference.inSeconds < 60) {
+      return '${difference.inSeconds}s ago';
+    } else if (difference.inMinutes < 60) {
+      return '${difference.inMinutes}m ago';
+    } else if (difference.inHours < 24) {
+      return '${difference.inHours}h ago';
+    } else {
+      return '${dateTime.day}/${dateTime.month} ${dateTime.hour}:${dateTime.minute.toString().padLeft(2, '0')}';
+    }
   }
 
   Future<void> _fetchStats() async {
+    setState(() {
+      _isRefreshing = true;
+    });
+
     try {
       final response = await http.get(
         Uri.parse('${Config.serverUrl}/attendance_stats'),
@@ -39,12 +79,19 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
       if (response.statusCode == 200) {
         final stats = json.decode(response.body);
         setState(() {
-          _totalStudents = stats['total'];
-          _presentStudents = stats['present'];
-          _absentStudents = stats['absent'];
+          _totalStudents = stats['total'] ?? 0;
+          _presentStudents = stats['present'] ?? 0;
+          _absentStudents = stats['absent'] ?? 0;
+          _isRefreshing = false;
+          _lastUpdated = DateTime.now();
         });
+        print(
+            '📊 Stats loaded - Total: $_totalStudents, Present: $_presentStudents, Absent: $_absentStudents');
       }
     } catch (e) {
+      setState(() {
+        _isRefreshing = false;
+      });
       print('Error fetching stats: $e');
     }
   }
@@ -93,7 +140,7 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text(jsonResponse['message'])),
       );
-      
+
       // Refresh stats after successful upload
       _fetchStats();
     } catch (e) {
@@ -110,24 +157,51 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text('Update Server URL'),
+        backgroundColor: Color(0xFF1f2937), // Dark background
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Text(
+          'Update Server URL',
+          style: TextStyle(
+            color: Color(0xFFf9fafb), // White text
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            TextField(
-              controller: _urlController,
-              decoration: InputDecoration(
-                labelText: 'Server URL',
-                hintText: 'http://server-ip:port',
-                border: OutlineInputBorder(),
+            Container(
+              decoration: BoxDecoration(
+                color: Color(0xFF374151), // Darker input background
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: TextField(
+                controller: _urlController,
+                style: TextStyle(
+                  color: Color(0xFFf9fafb), // White text
+                ),
+                decoration: InputDecoration(
+                  labelText: 'Server URL',
+                  labelStyle: TextStyle(
+                    color: Color(0xFF9ca3af), // Gray label
+                  ),
+                  hintText: 'http://server-ip:port',
+                  hintStyle: TextStyle(
+                    color: Color(0xFF6b7280), // Darker gray hint
+                  ),
+                  border: InputBorder.none,
+                  contentPadding: EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 16,
+                  ),
+                ),
               ),
             ),
-            SizedBox(height: 8),
+            SizedBox(height: 12),
             Text(
               'Example: http://10.2.8.97:5000',
               style: TextStyle(
                 fontSize: 12,
-                color: Colors.grey,
+                color: Color(0xFF9ca3af), // Gray text
               ),
             ),
           ],
@@ -135,15 +209,28 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text('CANCEL'),
+            child: Text(
+              'CANCEL',
+              style: TextStyle(color: Color(0xFF9ca3af)), // Gray
+            ),
           ),
           ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Color(0xFF818cf8), // Indigo
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             onPressed: () {
               Config.updateServerUrl(_urlController.text);
               Navigator.pop(context);
               _fetchStats(); // Refresh stats with new URL
               ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('Server URL updated')),
+                SnackBar(
+                  content: Text('Server URL updated'),
+                  backgroundColor: Color(0xFF10b981), // Green
+                ),
               );
             },
             child: Text('UPDATE'),
@@ -155,232 +242,536 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        Navigator.pushReplacementNamed(context, '/login');
-        return false;
-      },
-      child: Scaffold(
-        appBar: AppBar(
-          title: Text(
-            "KARE FAST · ADMIN",
-            style: TextStyle(
-              fontWeight: FontWeight.bold,
-              letterSpacing: 1.2,
-            ),
-          ),
-          actions: [
-            IconButton(
-              icon: Icon(Icons.settings),
-              onPressed: _showServerUrlDialog,
-              tooltip: 'Configure Server URL',
-            ),
-          ],
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Colors.blue[700]!, Colors.blue[500]!],
-              ),
-            ),
+    return Scaffold(
+      backgroundColor:
+          Color(0xFF111827), // Dark background like student dashboard
+      appBar: AppBar(
+        backgroundColor: Color(0xFF1f2937), // Dark app bar
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: Text(
+          "NetMark · ADMIN",
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            letterSpacing: -0.5,
+            color: Color(0xFFf9fafb), // White text
           ),
         ),
-        body: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [Colors.grey[100]!, Colors.grey[200]!],
-            ),
+        actions: [
+          IconButton(
+            icon: _isRefreshing
+                ? SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                      valueColor:
+                          AlwaysStoppedAnimation<Color>(Color(0xFFd1d5db)),
+                    ),
+                  )
+                : Icon(Icons.refresh_rounded, color: Color(0xFFd1d5db)),
+            onPressed: _isRefreshing ? null : _fetchStats,
+            tooltip: _isRefreshing ? 'Refreshing...' : 'Refresh Statistics',
           ),
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Row(
-                  children: [
-                    Expanded(
-                      child: _StatCard(
-                        title: "Total",
-                        count: _totalStudents,
-                        color: Colors.blue,
-                        icon: Icons.people,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/student_list',
-                          arguments: {
-                            'showPresent': false,
-                            'showAbsent': false,
-                          },
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        title: "Present",
-                        count: _presentStudents,
-                        color: Colors.green,
-                        icon: Icons.check_circle,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/student_list',
-                          arguments: {
-                            'showPresent': true,
-                            'showAbsent': false,
-                          },
-                        ),
-                      ),
-                    ),
-                    SizedBox(width: 16),
-                    Expanded(
-                      child: _StatCard(
-                        title: "Absent",
-                        count: _absentStudents,
-                        color: Colors.red,
-                        icon: Icons.cancel,
-                        onTap: () => Navigator.pushNamed(
-                          context,
-                          '/student_list',
-                          arguments: {
-                            'showPresent': false,
-                            'showAbsent': true,
-                          },
-                        ),
-                      ),
+          IconButton(
+            icon: Icon(Icons.settings, color: Color(0xFFd1d5db)),
+            onPressed: _showServerUrlDialog,
+            tooltip: 'Configure Server URL',
+          ),
+          IconButton(
+            icon: Icon(Icons.logout, color: Color(0xFFd1d5db)),
+            onPressed: _handleLogout,
+            tooltip: 'Logout',
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Statistics Cards with enhanced design
+              Container(
+                padding: EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Color(0xFF1f2937),
+                  borderRadius: BorderRadius.circular(20),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
                     ),
                   ],
                 ),
-                SizedBox(height: 24),
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                child: Column(
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         Text(
-                          "Upload Attendance Sheet",
+                          "Attendance Statistics",
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
+                            color: Color(0xFFf9fafb),
+                            letterSpacing: -0.5,
                           ),
-                          textAlign: TextAlign.center,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
-                        SizedBox(height: 16),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.blue,
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
+                        SizedBox(width: 12),
+                        Container(
+                          padding:
+                              EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _isRefreshing
+                                ? Color(0xFF3b82f6).withOpacity(0.2)
+                                : Color(0xFF10b981).withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _isRefreshing
+                                  ? Color(0xFF3b82f6).withOpacity(0.5)
+                                  : Color(0xFF10b981).withOpacity(0.5),
+                              width: 1,
                             ),
                           ),
-                          onPressed: pickFile,
-                          icon: Icon(Icons.file_upload),
-                          label: Text("Select CSV File", style: TextStyle(color: Colors.white),),
-                        ),
-                        if (_filePath != null)
-                          Padding(
-                            padding: const EdgeInsets.all(8.0),
-                            child: Text(
-                              "Selected: ${_filePath!.split('/').last}",
-                              textAlign: TextAlign.center,
-                              style: TextStyle(color: Colors.blue),
-                            ),
-                          ),
-                        SizedBox(height: 10),
-                        ElevatedButton.icon(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.green,
-                            padding: EdgeInsets.symmetric(vertical: 12),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                          ),
-                          onPressed: _isUploading ? null : uploadFile,
-                          icon: _isUploading
-                              ? SizedBox(
-                                  height: 20,
-                                  width: 20,
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (_isRefreshing)
+                                SizedBox(
+                                  width: 12,
+                                  height: 12,
                                   child: CircularProgressIndicator(
                                     strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                        Color(0xFF3b82f6)),
                                   ),
                                 )
-                              : Icon(Icons.cloud_upload),
-                          label: Text(_isUploading ? "Uploading..." : "Upload", style: TextStyle(color: Colors.white),),
+                              else
+                                AnimatedBuilder(
+                                  animation: _pulseAnimation,
+                                  builder: (context, child) {
+                                    return Transform.scale(
+                                      scale: _pulseAnimation.value,
+                                      child: Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: Color(0xFF10b981),
+                                          shape: BoxShape.circle,
+                                          boxShadow: [
+                                            BoxShadow(
+                                              color: Color(0xFF10b981)
+                                                  .withOpacity(0.5),
+                                              blurRadius: 4,
+                                              spreadRadius: 1,
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    );
+                                  },
+                                ),
+                              SizedBox(width: 6),
+                              Text(
+                                _isRefreshing ? "UPDATING" : "LIVE",
+                                style: TextStyle(
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                  color: _isRefreshing
+                                      ? Color(0xFF3b82f6)
+                                      : Color(0xFF10b981),
+                                  letterSpacing: 0.5,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
                       ],
                     ),
+                    SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _StatCard(
+                            title: "Total",
+                            count: _totalStudents,
+                            color: Color(0xFF3b82f6), // Blue
+                            icon: Icons.people_alt_rounded,
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/admin',
+                              arguments: {
+                                'showPresent': false,
+                                'showAbsent': false,
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: _StatCard(
+                            title: "Present",
+                            count: _presentStudents,
+                            color: Color(0xFF10b981), // Green
+                            icon: Icons.check_circle_rounded,
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/admin',
+                              arguments: {
+                                'showPresent': true,
+                                'showAbsent': false,
+                              },
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 16),
+                        Expanded(
+                          child: _StatCard(
+                            title: "Absent",
+                            count: _absentStudents,
+                            color: Color(0xFFef4444), // Red
+                            icon: Icons.cancel_rounded,
+                            onTap: () => Navigator.pushNamed(
+                              context,
+                              '/admin',
+                              arguments: {
+                                'showPresent': false,
+                                'showAbsent': true,
+                              },
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (_lastUpdated != null) ...[
+                      SizedBox(height: 16),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF374151).withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "Last updated: ${_formatTime(_lastUpdated!)}",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF9ca3af),
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF10b981).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(
+                                color: Color(0xFF10b981).withOpacity(0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              "Auto-refresh: 3s",
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Color(0xFF10b981),
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              SizedBox(height: 32),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF1f2937),
+                      Color(0xFF111827),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFF3b82f6).withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Color(0xFF3b82f6).withOpacity(0.2),
+                    width: 1,
                   ),
                 ),
-                SizedBox(height: 24),
-                Card(
-                  elevation: 8,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(15),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.all(16),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Text(
-                          "Manual Attendance Entry",
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
+                child: Padding(
+                  padding: EdgeInsets.all(28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF3b82f6).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.upload_file_rounded,
+                              color: Color(0xFF3b82f6),
+                              size: 24,
+                            ),
                           ),
-                          textAlign: TextAlign.center,
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              "Upload Attendance Sheet",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFf9fafb),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF818cf8), // Indigo
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                        SizedBox(height: 16),
-                        TextField(
+                        onPressed: pickFile,
+                        icon: Icon(Icons.file_upload, color: Colors.white),
+                        label: Text(
+                          "Select CSV File",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      if (_filePath != null)
+                        Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFF374151),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              "Selected: ${_filePath!.split('/').last}",
+                              textAlign: TextAlign.center,
+                              style: TextStyle(
+                                color: Color(0xFF10b981), // Green
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        ),
+                      SizedBox(height: 16),
+                      ElevatedButton.icon(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFF10b981), // Green
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        onPressed: _isUploading ? null : uploadFile,
+                        icon: _isUploading
+                            ? SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
+                                ),
+                              )
+                            : Icon(Icons.cloud_upload, color: Colors.white),
+                        label: Text(
+                          _isUploading ? "Uploading..." : "Upload",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              SizedBox(height: 32),
+              Container(
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Color(0xFF1f2937),
+                      Color(0xFF111827),
+                    ],
+                  ),
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Color(0xFFef4444).withOpacity(0.1),
+                      blurRadius: 20,
+                      offset: Offset(0, 8),
+                    ),
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: Offset(0, 4),
+                    ),
+                  ],
+                  border: Border.all(
+                    color: Color(0xFFef4444).withOpacity(0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Padding(
+                  padding: EdgeInsets.all(28),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        children: [
+                          Container(
+                            padding: EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Color(0xFFef4444).withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Icon(
+                              Icons.edit_calendar_rounded,
+                              color: Color(0xFFef4444),
+                              size: 24,
+                            ),
+                          ),
+                          SizedBox(width: 16),
+                          Expanded(
+                            child: Text(
+                              "Manual Attendance Entry",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFf9fafb),
+                                letterSpacing: -0.5,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      SizedBox(height: 20),
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Color(0xFF374151), // Darker input background
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: TextField(
+                          style: TextStyle(
+                            color: Color(0xFFf9fafb), // White text
+                            fontSize: 16,
+                          ),
                           decoration: InputDecoration(
                             labelText: 'Enter Registration Number',
-                            border: OutlineInputBorder(),
+                            labelStyle: TextStyle(
+                              color: Color(0xFF9ca3af), // Gray label
+                            ),
+                            hintText: 'e.g., 20K-0001',
+                            hintStyle: TextStyle(
+                              color: Color(0xFF6b7280), // Darker gray hint
+                            ),
+                            border: InputBorder.none,
+                            contentPadding: EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 16,
+                            ),
                           ),
                           onChanged: (value) {
                             _registrationNumber = value;
                           },
                         ),
-                        SizedBox(height: 10),
-                        ElevatedButton(
-                          onPressed: _isUploading ? null : () => _uploadManualAttendance(),
-                          child: Text("Mark Attendance"),
+                      ),
+                      SizedBox(height: 20),
+                      ElevatedButton(
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Color(0xFFef4444), // Red
+                          padding: EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
-                      ],
-                    ),
+                        onPressed: _isUploading
+                            ? null
+                            : () => _uploadManualAttendance(),
+                        child: Text(
+                          "Mark Attendance",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                if (_serverResponse.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 16),
-                    child: Card(
-                      elevation: 4,
-                      child: Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          _serverResponse,
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.blue[700],
-                          ),
+              ),
+              if (_serverResponse.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 24),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: Color(0xFF1f2937),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: Color(0xFF10b981),
+                        width: 1,
+                      ),
+                    ),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(
+                        _serverResponse,
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF10b981), // Green
                         ),
                       ),
                     ),
                   ),
-              ],
-            ),
+                ),
+            ],
           ),
         ),
       ),
@@ -425,15 +816,72 @@ class _UploadCSVScreenState extends State<UploadCSVScreen> {
     }
   }
 
+  Future<void> _handleLogout() async {
+    // Cancel the timer
+    _statsTimer?.cancel();
+
+    // Show confirmation dialog
+    bool? shouldLogout = await showDialog<bool>(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          backgroundColor: Color(0xFF1f2937), // Dark background
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            'Logout',
+            style: TextStyle(
+              color: Color(0xFFf9fafb), // White text
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          content: Text(
+            'Are you sure you want to logout?',
+            style: TextStyle(
+              color: Color(0xFFd1d5db), // Light gray text
+              fontSize: 16,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(false),
+              child: Text(
+                'Cancel',
+                style: TextStyle(color: Color(0xFF9ca3af)), // Gray
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.of(context).pop(true),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Color(0xFFef4444), // Red
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
+              ),
+              child: Text('Logout'),
+            ),
+          ],
+        );
+      },
+    );
+
+    if (shouldLogout == true) {
+      // Navigate to login page
+      Navigator.pushReplacementNamed(context, '/');
+    }
+  }
+
   @override
   void dispose() {
     _urlController.dispose();
     _statsTimer?.cancel();
+    _pulseController.dispose();
     super.dispose();
   }
 }
 
-class _StatCard extends StatelessWidget {
+class _StatCard extends StatefulWidget {
   final String title;
   final int count;
   final Color color;
@@ -449,56 +897,139 @@ class _StatCard extends StatelessWidget {
   });
 
   @override
+  _StatCardState createState() => _StatCardState();
+}
+
+class _StatCardState extends State<_StatCard>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+  bool _isPressed = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      duration: Duration(milliseconds: 150),
+      vsync: this,
+    );
+    _scaleAnimation = Tween<double>(
+      begin: 1.0,
+      end: 0.95,
+    ).animate(CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.easeInOut,
+    ));
+  }
+
+  @override
+  void dispose() {
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Card(
-      elevation: 12,
-      shadowColor: color.withOpacity(0.4),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(15),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(15),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(15),
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.white,
-                color.withOpacity(0.1),
+    return AnimatedBuilder(
+      animation: _scaleAnimation,
+      builder: (context, child) {
+        return Transform.scale(
+          scale: _scaleAnimation.value,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Color(0xFF374151),
+                  Color(0xFF1f2937),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              boxShadow: [
+                BoxShadow(
+                  color: widget.color.withOpacity(0.2),
+                  blurRadius: 15,
+                  offset: Offset(0, 8),
+                ),
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.1),
+                  blurRadius: 10,
+                  offset: Offset(0, 4),
+                ),
               ],
+              border: Border.all(
+                color: widget.color.withOpacity(0.3),
+                width: 1,
+              ),
+            ),
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () {
+                  _animationController.forward().then((_) {
+                    _animationController.reverse();
+                  });
+                  widget.onTap();
+                },
+                onTapDown: (_) {
+                  setState(() => _isPressed = true);
+                },
+                onTapUp: (_) {
+                  setState(() => _isPressed = false);
+                },
+                onTapCancel: () {
+                  setState(() => _isPressed = false);
+                },
+                borderRadius: BorderRadius.circular(20),
+                child: Container(
+                  padding: EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(12),
+                        decoration: BoxDecoration(
+                          color: widget.color.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          widget.icon,
+                          color: widget.color,
+                          size: 28,
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Text(
+                        widget.title,
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF9ca3af),
+                          letterSpacing: 0.5,
+                        ),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        widget.count.toString(),
+                        style: TextStyle(
+                          fontSize: 32,
+                          fontWeight: FontWeight.bold,
+                          color: widget.color,
+                          letterSpacing: -1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          padding: EdgeInsets.all(16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(icon, color: color, size: 32),
-              SizedBox(height: 8),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[700],
-                ),
-                textAlign: TextAlign.center,
-              ),
-              SizedBox(height: 4),
-              Text(
-                count.toString(),
-                style: TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                  color: color,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
+        );
+      },
     );
   }
-} 
+}

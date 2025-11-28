@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'services/firebase_auth_service.dart';
 
 class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
+
   @override
   _LoginPageState createState() => _LoginPageState();
 }
@@ -11,7 +14,7 @@ class _LoginPageState extends State<LoginPage> {
   final TextEditingController _passwordController = TextEditingController();
   String _errorMessage = '';
   bool _isLoading = false;
-  
+
   // Initialize logger
   final Logger _logger = Logger(
     printer: PrettyPrinter(
@@ -39,36 +42,89 @@ class _LoginPageState extends State<LoginPage> {
       return;
     }
 
-    // Simple admin validation (for demo)
-    if (_emailController.text == 'admin@kare.edu' && _passwordController.text == 'admin123') {
-      _logger.i('Admin login successful');
+    try {
+      _logger.d('Setting loading state to true');
+      setState(() => _isLoading = true);
 
-      setState(() => _isLoading = false);
+      _logger.i('Attempting to sign in with email: ${_emailController.text}');
 
-      // Clear the text fields
-      _emailController.clear();
-      _passwordController.clear();
-
-      // Close the dialog first
-      Navigator.of(context).pop();
-
-      // Show success message
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Admin login successful!')),
+      // Attempt to sign in using Firebase Auth Service
+      final userCredential =
+          await FirebaseAuthService.signInWithEmailAndPassword(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
       );
 
-      // Navigate after a short delay
-      Future.delayed(Duration(milliseconds: 100), () {
-        if (context.mounted) {
-          Navigator.pushReplacementNamed(context, '/admin');
-        }
-      });
-    } else {
-      _logger.w('Invalid admin credentials');
+      _logger.d('Firebase auth response received');
+
+      // Check if sign in was successful
+      if (userCredential?.user != null) {
+        _logger
+            .i('Successfully signed in user: ${userCredential!.user!.email}');
+
+        if (!context.mounted) return;
+
+        setState(() => _isLoading = false);
+
+        // Clear the text fields
+        _emailController.clear();
+        _passwordController.clear();
+
+        // Close the dialog first
+        Navigator.of(context).pop();
+
+        // Show success message
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Login successful!')),
+        );
+
+        // Navigate after a short delay
+        if (!context.mounted) return;
+
+        Future.delayed(Duration(milliseconds: 100), () {
+          if (context.mounted) {
+            Navigator.pushReplacementNamed(context, '/admin');
+          }
+        });
+      }
+    } on FirebaseAuthException catch (e) {
+      _logger.e('Firebase Auth Exception: ${e.message}',
+          error: e, stackTrace: StackTrace.current);
+
+      if (!context.mounted) return;
 
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Invalid email or password. Try admin@kare.edu / admin123';
+        switch (e.code) {
+          case 'user-not-found':
+            _errorMessage = 'No user found with this email.';
+            break;
+          case 'wrong-password':
+            _errorMessage = 'Wrong password provided.';
+            break;
+          case 'invalid-email':
+            _errorMessage = 'Invalid email address.';
+            break;
+          case 'user-disabled':
+            _errorMessage = 'This user account has been disabled.';
+            break;
+          default:
+            _errorMessage = 'An error occurred: ${e.message}';
+        }
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(_errorMessage)),
+      );
+    } catch (e, stackTrace) {
+      _logger.e('Unexpected error during login: $e',
+          error: e, stackTrace: stackTrace);
+
+      if (!context.mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'An unexpected error occurred. Please try again.';
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -80,202 +136,137 @@ class _LoginPageState extends State<LoginPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: Text(
-          "KARE FAST · HOME",
-          style: TextStyle(
-            color: Colors.white,
-            fontWeight: FontWeight.bold,
-            letterSpacing: 1.2,
-          ),
-        ),
-        flexibleSpace: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [
-                Colors.blue[700]!,
-                Colors.blue[500]!,
-              ],
-            ),
-          ),
-        ),
-        elevation: 4,
-      ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topCenter,
-            end: Alignment.bottomCenter,
-            colors: [
-              Colors.grey[100]!,
-              Colors.grey[200]!,
-            ],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Card(
-                  elevation: 8,
-                  shadowColor: Colors.blue.withOpacity(0.4),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Container(
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          Colors.white,
-                          Colors.grey[50]!,
+      backgroundColor: Color(0xFF111418), // Dark background
+      body: SizedBox(
+        width: double.infinity,
+        height: double.infinity,
+        child: Column(
+          children: [
+            // Main content area
+            Expanded(
+              child: SizedBox(
+                width: double.infinity,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Logo and title section
+                    SizedBox(
+                      width: double.infinity,
+                      child: Column(
+                        children: [
+                          // Logo SVG (simplified as Icon)
+                          SizedBox(
+                            width: 64,
+                            height: 64,
+                            child: Icon(
+                              Icons.account_circle,
+                              size: 64,
+                              color: Color(0xFF0c77f2), // Brand primary blue
+                            ),
+                          ),
+                          SizedBox(height: 24),
+                          // Title
+                          Text(
+                            "NetMark",
+                            style: TextStyle(
+                              fontSize: 36,
+                              fontWeight: FontWeight.w900,
+                              color: Colors.white,
+                              letterSpacing: -0.5,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          // Subtitle
+                          Text(
+                            "Connect with your peers and faculty.",
+                            style: TextStyle(
+                              fontSize: 18,
+                              color: Color(0xFF9caaba), // Text secondary dark
+                            ),
+                          ),
                         ],
                       ),
                     ),
-                    padding: EdgeInsets.all(24.0),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          "Welcome",
-                          style: TextStyle(
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            foreground: Paint()
-                              ..shader = LinearGradient(
-                                colors: [
-                                  Colors.blue[700]!,
-                                  Colors.blue[400]!,
-                                ],
-                              ).createShader(Rect.fromLTWH(0.0, 0.0, 200.0, 70.0)),
-                          ),
-                        ),
-                        SizedBox(height: 30),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            gradient: LinearGradient(
-                              colors: [Colors.blue[600]!, Colors.blue[400]!],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.3),
-                                spreadRadius: 1,
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
+                    SizedBox(height: 48),
+                    // Buttons section
+                    Container(
+                      width: double.infinity,
+                      padding: EdgeInsets.symmetric(horizontal: 16),
+                      child: Column(
+                        children: [
+                          // Login button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Color(0xFF0c77f2), // Brand primary
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 16),
                               ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/signup');
-                            },
-                            child: Text(
-                              "User Sign Up",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                              onPressed: () => Navigator.pushNamed(
+                                  context, '/role-selection'),
+                              child: Text(
+                                "Login",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 16),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            gradient: LinearGradient(
-                              colors: [Colors.green[600]!, Colors.green[400]!],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.green.withOpacity(0.3),
-                                spreadRadius: 1,
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
+                          SizedBox(height: 16),
+                          // Sign Up button
+                          SizedBox(
+                            width: double.infinity,
+                            height: 56,
+                            child: ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor:
+                                    Color(0xFF283039), // Brand secondary
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                padding: EdgeInsets.symmetric(vertical: 16),
                               ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            onPressed: () {
-                              Navigator.pushReplacementNamed(context, '/face_verification');
-                            },
-                            child: Text(
-                              "Existing User? Login",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
+                              onPressed: () => Navigator.pushNamed(
+                                  context, '/signup-role-selection'),
+                              child: Text(
+                                "Sign Up",
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 20),
-                        Container(
-                          decoration: BoxDecoration(
-                            borderRadius: BorderRadius.circular(30),
-                            gradient: LinearGradient(
-                              colors: [Colors.blue[800]!, Colors.blue[600]!],
-                            ),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.blue.withOpacity(0.3),
-                                spreadRadius: 1,
-                                blurRadius: 8,
-                                offset: Offset(0, 4),
-                              ),
-                            ],
-                          ),
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.transparent,
-                              shadowColor: Colors.transparent,
-                              padding: EdgeInsets.symmetric(horizontal: 50, vertical: 15),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(30),
-                              ),
-                            ),
-                            onPressed: () => _showLoginDialog(context),
-                            child: Text(
-                              "Admin Login",
-                              style: TextStyle(
-                                fontSize: 16,
-                                color: Colors.white,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                        ],
+                      ),
                     ),
-                  ),
+                  ],
                 ),
-              ],
+              ),
             ),
-          ),
+            // Footer
+            Container(
+              padding: EdgeInsets.all(16),
+              child: Text(
+                "By continuing, you agree to our Terms of Service and Privacy Policy.",
+                style: TextStyle(
+                  fontSize: 14,
+                  color: Color(0xFF6b7280), // Text tertiary dark
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -286,49 +277,65 @@ class _LoginPageState extends State<LoginPage> {
       context: context,
       barrierDismissible: false,
       builder: (dialogContext) => AlertDialog(
+        backgroundColor: Color(0xFF111418), // Dark background
         shape: RoundedRectangleBorder(
           borderRadius: BorderRadius.circular(20),
         ),
         title: Text(
-          "KARE FAST · ADMIN",
+          "NetMark - Login",
           style: TextStyle(
-            color: Colors.blue[700],
+            color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontSize: 20,
           ),
         ),
-        content: Container(
+        content: SizedBox(
           width: double.maxFinite,
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               TextField(
                 controller: _emailController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: "Email",
+                  labelStyle: TextStyle(color: Color(0xFF9caaba)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF283039)),
                   ),
-                  prefixIcon: Icon(Icons.email, color: Colors.blue),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF283039)),
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                    borderSide: BorderSide(color: Color(0xFF0c77f2), width: 2),
                   ),
+                  prefixIcon: Icon(Icons.email, color: Color(0xFF0c77f2)),
                 ),
                 keyboardType: TextInputType.emailAddress,
               ),
               SizedBox(height: 16),
               TextField(
                 controller: _passwordController,
+                style: TextStyle(color: Colors.white),
                 decoration: InputDecoration(
                   labelText: "Password",
+                  labelStyle: TextStyle(color: Color(0xFF9caaba)),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF283039)),
                   ),
-                  prefixIcon: Icon(Icons.lock, color: Colors.blue),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(10),
+                    borderSide: BorderSide(color: Color(0xFF283039)),
+                  ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(10),
-                    borderSide: BorderSide(color: Colors.blue, width: 2),
+                    borderSide: BorderSide(color: Color(0xFF0c77f2), width: 2),
                   ),
+                  prefixIcon: Icon(Icons.lock, color: Color(0xFF0c77f2)),
                 ),
                 obscureText: true,
               ),
@@ -354,14 +361,15 @@ class _LoginPageState extends State<LoginPage> {
                 _errorMessage = '';
               });
             },
-            child: Text("Cancel"),
+            child: Text(
+              "Cancel",
+              style: TextStyle(color: Color(0xFF9caaba)),
+            ),
           ),
           Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [Colors.blue[700]!, Colors.blue[500]!],
-              ),
+              color: Color(0xFF0c77f2),
             ),
             child: ElevatedButton(
               style: ElevatedButton.styleFrom(
@@ -396,4 +404,4 @@ class _LoginPageState extends State<LoginPage> {
     _passwordController.dispose();
     super.dispose();
   }
-} 
+}

@@ -1,0 +1,2 @@
+D:/FAST_Attendance/file_sender/android/app/.cxx/Debug/2932551e/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/FAST_Attendance/file_sender/android/app/.cxx/Debug/2932551e/arm64-v8a/CMakeFiles/rebuild_cache.dir

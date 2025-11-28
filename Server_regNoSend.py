@@ -213,8 +213,11 @@ def search_students(query):
         # Read attendance data
         present_students = set()
         if os.path.exists(VERIFIED_IDS_FILE):
-            present_df = pd.read_csv(VERIFIED_IDS_FILE)
-            present_students = set(present_df['Registration Number'].astype(str))
+            present_df = pd.read_csv(VERIFIED_IDS_FILE, dtype={"Registration Number": str})  # Read as string
+            present_students = set(
+                str(reg_no).strip().split(".")[0]  # Remove ".0" if present
+                for reg_no in present_df['Registration Number'].dropna()  # Drop NaN values
+            )
 
         # Filter students based on search query
         query = query.lower()
@@ -226,7 +229,7 @@ def search_students(query):
         # Prepare filtered student list
         students_list = []
         for _, row in filtered_students.iterrows():
-            reg_no = str(row['Registration Number']).strip()
+            reg_no = str(row['Registration Number']).strip().split(".")[0]  # Remove ".0"
             name = row['Name'].strip()
             students_list.append({
                 "name": name,

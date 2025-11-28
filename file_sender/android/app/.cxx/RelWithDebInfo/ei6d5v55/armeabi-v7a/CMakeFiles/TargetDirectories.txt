@@ -1,0 +1,2 @@
+D:/FAST_Attendance/file_sender/android/app/.cxx/RelWithDebInfo/ei6d5v55/armeabi-v7a/CMakeFiles/edit_cache.dir
+D:/FAST_Attendance/file_sender/android/app/.cxx/RelWithDebInfo/ei6d5v55/armeabi-v7a/CMakeFiles/rebuild_cache.dir
