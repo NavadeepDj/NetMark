@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'services/firebase_auth_service.dart';
 
 class LoginPage extends StatefulWidget {

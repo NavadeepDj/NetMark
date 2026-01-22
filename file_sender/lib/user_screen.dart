@@ -19,7 +19,6 @@ class _UserScreenState extends State<UserScreen>
   final TextEditingController _uniqueIdController = TextEditingController();
   final TextEditingController _urlController = TextEditingController();
   final Logger _logger = Logger();
-  final FaceAuthService _faceAuthService = FaceAuthService();
   String _userName = "";
   String _uniqueIdResponse = "";
   bool _isLoading = false;
@@ -100,88 +99,6 @@ class _UserScreenState extends State<UserScreen>
       return;
     }
 
-    // Show face verification dialog before marking attendance
-    final verified = await _showFaceVerificationDialog();
-    if (!verified) {
-      return;
-    }
-
-    setState(() => _isLoading = true);
-
-    try {
-      // Fetch face embeddings mapped to registration numbers
-      final embeddingsByRegNumber =
-          await FirestoreService.getFaceEmbeddingsByRegNumber();
-
-      if (embeddingsByRegNumber.isEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content:
-                Text("No face data available. Please contact administrator."),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        return;
-      }
-
-      // Show face verification in a modal dialog
-      final result = await _showFaceVerificationDialog(embeddingsByRegNumber);
-
-      if (result != null) {
-        // Face verification successful, check if the matched registration number matches the entered one
-        if (result == uniqueId) {
-          print(
-              '✅ Face verification successful for registration number: $result');
-          await uploadUniqueId(uniqueId);
-          // Show success message and reset form
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  "✅ Attendance marked successfully! Welcome back, $_userName!"),
-              backgroundColor: Colors.green,
-              duration: Duration(seconds: 3),
-            ),
-          );
-
-          // Reset the form to allow for new attendance entries
-          setState(() {
-            _userFound = false;
-            _userName = "";
-            _uniqueIdResponse = "";
-            _uniqueIdController.clear();
-          });
-        } else {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                  "Face verification failed: Face does not match the entered registration number."),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-      } else {
-        // Face verification failed
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text("Face verification failed. Please try again."),
-            backgroundColor: Colors.red,
-          ),
-        );
-      }
-    } catch (e) {
-      print('❌ Error during face verification: $e');
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error during face verification: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
-    } finally {
-      setState(() => _isLoading = false);
-    }
-  }
-
-  Future<void> uploadUniqueId(String uniqueId) async {
     setState(() => _isLoading = true);
 
     try {

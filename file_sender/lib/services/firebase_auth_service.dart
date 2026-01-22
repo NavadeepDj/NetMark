@@ -265,4 +265,18 @@ class FirebaseAuthService {
       throw Exception('Failed to send email verification');
     }
   }
+
+  // Clear all cached auth state (signs out and clears local tokens)
+  // Note: This only clears local device state. The account still exists in Firebase Auth.
+  // To fully delete an account, use Firebase Console or deleteUserAccount() while signed in.
+  static Future<void> clearAuthState() async {
+    try {
+      _logger.i('Clearing all cached authentication state');
+      await _auth.signOut();
+      _logger.i('Auth state cleared successfully');
+    } catch (e) {
+      _logger.e('Error clearing auth state: $e');
+      throw Exception('Failed to clear auth state');
+    }
+  }
 }
