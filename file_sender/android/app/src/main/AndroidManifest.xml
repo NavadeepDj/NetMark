@@ -1,17 +1,4 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
-<<<<<<< HEAD
-
-    <!-- Permissions for Camera -->
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-
-    <!-- Camera features -->
-    <uses-feature android:name="android.hardware.camera" android:required="false" />
-    <uses-feature android:name="android.hardware.camera.front" android:required="false" />
-=======
     <!-- Camera permissions -->
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
@@ -25,7 +12,6 @@
     <uses-feature android:name="android.hardware.camera" android:required="true" />
     <uses-feature android:name="android.hardware.camera.autofocus" android:required="false" />
     
->>>>>>> f3072e0029920c28af718e637c10632f201321b6
     <application
         android:label="NetMark"
         android:name="${applicationName}"
