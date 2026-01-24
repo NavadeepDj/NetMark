@@ -4,6 +4,7 @@ This project is a network attendance with subnet validation and facial auth
 This repository contains only illustrative materials. 
 The full implementation is proprietary and not publicly available.
 
+But the prototype is available for download at releases section in this repo.
 ## License
 This project is released under the CC BY-NC-ND 4.0 License.
 
