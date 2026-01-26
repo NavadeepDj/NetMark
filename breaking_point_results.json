@@ -1,0 +1,72 @@
+{
+  "timestamp": "2026-01-26T16:48:29.431166",
+  "test_config": {
+    "base_url": "http://127.0.0.1:5000",
+    "endpoint": "/attendance_stats",
+    "start_users": 150,
+    "max_users": 400,
+    "step": 50,
+    "requests_per_user": 5
+  },
+  "results": [
+    {
+      "concurrent_users": 150,
+      "total_requests": 750,
+      "successful_requests": 750,
+      "failed_requests": 0,
+      "success_rate": 1.0,
+      "total_time_seconds": 4.690679299999829,
+      "throughput_rps": 159.89155344728584,
+      "mean_response_time_ms": 778.2342395999731,
+      "median_response_time_ms": 656.0155000006489,
+      "min_response_time_ms": 111.02140000002692,
+      "max_response_time_ms": 2209.4897000006313,
+      "std_dev_ms": 395.7846285615984,
+      "timeout_errors": 0,
+      "connection_errors": 0,
+      "http_errors": 0,
+      "p95_response_time_ms": 1703.195099998993,
+      "p99_response_time_ms": 2169.6558999992703
+    },
+    {
+      "concurrent_users": 200,
+      "total_requests": 1000,
+      "successful_requests": 984,
+      "failed_requests": 16,
+      "success_rate": 0.984,
+      "total_time_seconds": 5.992779500000324,
+      "throughput_rps": 164.19759812620282,
+      "mean_response_time_ms": 887.2622727642429,
+      "median_response_time_ms": 654.7441500006244,
+      "min_response_time_ms": 16.944799999691895,
+      "max_response_time_ms": 3028.9302000001044,
+      "std_dev_ms": 604.7993664602864,
+      "timeout_errors": 0,
+      "connection_errors": 16,
+      "http_errors": 0,
+      "p95_response_time_ms": 2271.471500000189,
+      "p99_response_time_ms": 2822.6988000005804
+    },
+    {
+      "concurrent_users": 250,
+      "total_requests": 1250,
+      "successful_requests": 1182,
+      "failed_requests": 68,
+      "success_rate": 0.9456,
+      "total_time_seconds": 6.218715699998938,
+      "throughput_rps": 190.07140011243828,
+      "mean_response_time_ms": 890.8465313028756,
+      "median_response_time_ms": 658.4756500005824,
+      "min_response_time_ms": 13.383899999098503,
+      "max_response_time_ms": 2875.1828000004025,
+      "std_dev_ms": 589.6126300000936,
+      "timeout_errors": 0,
+      "connection_errors": 68,
+      "http_errors": 0,
+      "p95_response_time_ms": 2219.2957999995997,
+      "p99_response_time_ms": 2613.3666999994603
+    }
+  ],
+  "breaking_point_found": true,
+  "breaking_point_users": 250
+}

@@ -33,27 +33,31 @@ class StandaloneMCPServer {
       'export_attendance_data': _exportAttendanceData,
     };
 
-    print('🚀 Standalone MCP Server initialized with face authentication tools');
+    print(
+        '🚀 Standalone MCP Server initialized with face authentication tools');
   }
 
   // Simulated user storage
   final Map<String, Map<String, dynamic>> _users = {};
 
   // User Management Methods
-  Future<Map<String, dynamic>> _registerUser(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _registerUser(
+      Map<String, dynamic> params) async {
     try {
       final name = params['name'] as String?;
       final registrationNumber = params['registrationNumber'] as String?;
       final faceEmbedding = params['faceEmbedding'] as List<dynamic>?;
 
       if (name == null || registrationNumber == null || faceEmbedding == null) {
-        throw Exception('Missing required parameters: name, registrationNumber, faceEmbedding');
+        throw Exception(
+            'Missing required parameters: name, registrationNumber, faceEmbedding');
       }
 
       _users[registrationNumber] = {
         'name': name,
         'registrationNumber': registrationNumber,
-        'faceEmbedding': faceEmbedding.map((e) => (e as num).toDouble()).toList(),
+        'faceEmbedding':
+            faceEmbedding.map((e) => (e as num).toDouble()).toList(),
         'createdAt': DateTime.now().toIso8601String(),
         'deviceId': 'standalone_device_${Random().nextInt(100000)}',
       };
@@ -76,7 +80,8 @@ class StandaloneMCPServer {
       final storedEmbedding = params['storedEmbedding'] as List<dynamic>?;
 
       if (currentEmbedding == null || storedEmbedding == null) {
-        throw Exception('Missing required parameters: currentEmbedding, storedEmbedding');
+        throw Exception(
+            'Missing required parameters: currentEmbedding, storedEmbedding');
       }
 
       final similarity = _calculateCosineSimilarity(
@@ -91,7 +96,9 @@ class StandaloneMCPServer {
         'verified': isVerified,
         'similarity': similarity,
         'threshold': 0.6,
-        'message': isVerified ? 'Face verification successful' : 'Face verification failed',
+        'message': isVerified
+            ? 'Face verification successful'
+            : 'Face verification failed',
         'timestamp': DateTime.now().toIso8601String(),
       };
     } catch (e) {
@@ -99,7 +106,8 @@ class StandaloneMCPServer {
     }
   }
 
-  Future<Map<String, dynamic>> _authenticateUser(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _authenticateUser(
+      Map<String, dynamic> params) async {
     try {
       final registrationNumber = params['registrationNumber'] as String?;
 
@@ -168,7 +176,8 @@ class StandaloneMCPServer {
   }
 
   // Attendance Management Methods
-  Future<Map<String, dynamic>> _markAttendance(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _markAttendance(
+      Map<String, dynamic> params) async {
     try {
       final registrationNumber = params['registrationNumber'] as String?;
 
@@ -191,7 +200,8 @@ class StandaloneMCPServer {
     }
   }
 
-  Future<Map<String, dynamic>> _getAttendanceStats(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _getAttendanceStats(
+      Map<String, dynamic> params) async {
     // Simulate attendance stats
     await Future.delayed(Duration(milliseconds: 300));
 
@@ -208,15 +218,18 @@ class StandaloneMCPServer {
     };
   }
 
-  Future<Map<String, dynamic>> _getStudentList(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _getStudentList(
+      Map<String, dynamic> params) async {
     await Future.delayed(Duration(milliseconds: 200));
 
-    final students = _users.values.map((user) => {
-      'name': user['name'],
-      'registrationNumber': user['registrationNumber'],
-      'present': Random().nextBool(),
-      'timestamp': DateTime.now().toIso8601String(),
-    }).toList();
+    final students = _users.values
+        .map((user) => {
+              'name': user['name'],
+              'registrationNumber': user['registrationNumber'],
+              'present': Random().nextBool(),
+              'timestamp': DateTime.now().toIso8601String(),
+            })
+        .toList();
 
     return {
       'success': true,
@@ -225,7 +238,8 @@ class StandaloneMCPServer {
     };
   }
 
-  Future<Map<String, dynamic>> _searchStudent(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _searchStudent(
+      Map<String, dynamic> params) async {
     try {
       final query = params['query'] as String?;
 
@@ -235,10 +249,17 @@ class StandaloneMCPServer {
 
       await Future.delayed(Duration(milliseconds: 200));
 
-      final filteredStudents = _users.values.where((user) =>
-        user['name'].toString().toLowerCase().contains(query.toLowerCase()) ||
-        user['registrationNumber'].toString().toLowerCase().contains(query.toLowerCase())
-      ).toList();
+      final filteredStudents = _users.values
+          .where((user) =>
+              user['name']
+                  .toString()
+                  .toLowerCase()
+                  .contains(query.toLowerCase()) ||
+              user['registrationNumber']
+                  .toString()
+                  .toLowerCase()
+                  .contains(query.toLowerCase()))
+          .toList();
 
       return {
         'success': true,
@@ -253,12 +274,14 @@ class StandaloneMCPServer {
   }
 
   // Face Recognition Methods
-  Future<Map<String, dynamic>> _extractFaceEmbedding(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _extractFaceEmbedding(
+      Map<String, dynamic> params) async {
     try {
       await Future.delayed(Duration(milliseconds: 1500)); // Simulate processing
 
       // Generate dummy embedding
-      final embedding = List.generate(512, (index) => (Random().nextDouble() - 0.5) * 2.0);
+      final embedding =
+          List.generate(512, (index) => (Random().nextDouble() - 0.5) * 2.0);
 
       return {
         'success': true,
@@ -271,7 +294,8 @@ class StandaloneMCPServer {
     }
   }
 
-  Future<Map<String, dynamic>> _compareFaces(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _compareFaces(
+      Map<String, dynamic> params) async {
     try {
       final embedding1 = params['embedding1'] as List<dynamic>?;
       final embedding2 = params['embedding2'] as List<dynamic>?;
@@ -297,14 +321,16 @@ class StandaloneMCPServer {
     }
   }
 
-  Future<Map<String, dynamic>> _verifyFaceMatch(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _verifyFaceMatch(
+      Map<String, dynamic> params) async {
     try {
       final currentEmbedding = params['currentEmbedding'] as List<dynamic>?;
       final storedEmbedding = params['storedEmbedding'] as List<dynamic>?;
       final threshold = params['threshold'] as double? ?? 0.6;
 
       if (currentEmbedding == null || storedEmbedding == null) {
-        throw Exception('Missing required parameters: currentEmbedding, storedEmbedding');
+        throw Exception(
+            'Missing required parameters: currentEmbedding, storedEmbedding');
       }
 
       final similarity = _calculateCosineSimilarity(
@@ -328,7 +354,8 @@ class StandaloneMCPServer {
   }
 
   // System Management Methods
-  Future<Map<String, dynamic>> _getServerStatus(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _getServerStatus(
+      Map<String, dynamic> params) async {
     return {
       'success': true,
       'status': {
@@ -342,7 +369,8 @@ class StandaloneMCPServer {
     };
   }
 
-  Future<Map<String, dynamic>> _getRegisteredUsers(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _getRegisteredUsers(
+      Map<String, dynamic> params) async {
     return {
       'success': true,
       'users': _users.values.toList(),
@@ -351,7 +379,8 @@ class StandaloneMCPServer {
     };
   }
 
-  Future<Map<String, dynamic>> _clearLocalData(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _clearLocalData(
+      Map<String, dynamic> params) async {
     _users.clear();
 
     return {
@@ -361,7 +390,8 @@ class StandaloneMCPServer {
     };
   }
 
-  Future<Map<String, dynamic>> _exportAttendanceData(Map<String, dynamic> params) async {
+  Future<Map<String, dynamic>> _exportAttendanceData(
+      Map<String, dynamic> params) async {
     await Future.delayed(Duration(milliseconds: 500));
 
     return {
@@ -380,7 +410,8 @@ class StandaloneMCPServer {
     };
   }
 
-  double _calculateCosineSimilarity(List<double> embedding1, List<double> embedding2) {
+  double _calculateCosineSimilarity(
+      List<double> embedding1, List<double> embedding2) {
     if (embedding1.length != embedding2.length) {
       throw ArgumentError('Embeddings must have the same length');
     }
@@ -409,13 +440,18 @@ class StandaloneMCPServer {
     _isRunning = true;
     print('🚀 Face Authentication MCP Server started (standalone stdio mode)');
     print('📋 Available MCP Tools:');
-    print('   📱 User Management: register_user, verify_user, authenticate_user, get_user_info, logout_user');
-    print('   📊 Attendance: mark_attendance, get_attendance_stats, get_student_list, search_student');
-    print('   🤖 Face Recognition: extract_face_embedding, compare_faces, verify_face_match');
-    print('   ⚙️ System: server_status, get_registered_users, clear_local_data, export_attendance_data');
+    print(
+        '   📱 User Management: register_user, verify_user, authenticate_user, get_user_info, logout_user');
+    print(
+        '   📊 Attendance: mark_attendance, get_attendance_stats, get_student_list, search_student');
+    print(
+        '   🤖 Face Recognition: extract_face_embedding, compare_faces, verify_face_match');
+    print(
+        '   ⚙️ System: server_status, get_registered_users, clear_local_data, export_attendance_data');
 
     try {
-      await for (final line in stdin.transform(utf8.decoder).transform(LineSplitter())) {
+      await for (final line
+          in stdin.transform(utf8.decoder).transform(LineSplitter())) {
         if (line.trim().isEmpty) continue;
 
         Map<String, dynamic>? request;
@@ -426,11 +462,8 @@ class StandaloneMCPServer {
         } catch (e) {
           final errorResponse = {
             'jsonrpc': '2.0',
-            'id': request?['id'] ?? null,
-            'error': {
-              'code': -32603,
-              'message': 'Internal error: $e'
-            }
+            'id': request?['id'],
+            'error': {'code': -32603, 'message': 'Internal error: $e'}
           };
           print(json.encode(errorResponse));
         }
@@ -440,7 +473,8 @@ class StandaloneMCPServer {
     }
   }
 
-  Future<Map<String, dynamic>> _handleRequest(Map<String, dynamic> request) async {
+  Future<Map<String, dynamic>> _handleRequest(
+      Map<String, dynamic> request) async {
     try {
       final method = request['method'] as String?;
       final params = request['params'] as Map<String, dynamic>? ?? {};
@@ -450,28 +484,18 @@ class StandaloneMCPServer {
         return {
           'jsonrpc': '2.0',
           'id': id,
-          'error': {
-            'code': -32601,
-            'message': 'Method not found: $method'
-          }
+          'error': {'code': -32601, 'message': 'Method not found: $method'}
         };
       }
 
       final result = await _tools[method]!(params);
 
-      return {
-        'jsonrpc': '2.0',
-        'id': id,
-        'result': result
-      };
+      return {'jsonrpc': '2.0', 'id': id, 'result': result};
     } catch (e) {
       return {
         'jsonrpc': '2.0',
-        'id': request['id'] ?? null,
-        'error': {
-          'code': -32603,
-          'message': 'Internal error: $e'
-        }
+        'id': request['id'],
+        'error': {'code': -32603, 'message': 'Internal error: $e'}
       };
     }
   }

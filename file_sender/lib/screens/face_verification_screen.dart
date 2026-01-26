@@ -7,15 +7,17 @@ import '../services/performance_metrics_service.dart';
 import '../user_screen.dart';
 
 class FaceVerificationScreen extends StatefulWidget {
-  const FaceVerificationScreen({Key? key}) : super(key: key);
+  const FaceVerificationScreen({super.key});
 
   @override
   _FaceVerificationScreenState createState() => _FaceVerificationScreenState();
 }
 
-class _FaceVerificationScreenState extends State<FaceVerificationScreen> with WidgetsBindingObserver {
+class _FaceVerificationScreenState extends State<FaceVerificationScreen>
+    with WidgetsBindingObserver {
   final Logger _logger = Logger();
-  final RealFaceRecognitionService _faceAuthService = RealFaceRecognitionService();
+  final RealFaceRecognitionService _faceAuthService =
+      RealFaceRecognitionService();
   final PerformanceMetricsService _metricsService = PerformanceMetricsService();
 
   CameraController? _cameraController;
@@ -71,7 +73,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
 
       final userInfo = await _faceAuthService.authenticateUser(currentRegNo);
       if (userInfo == null) {
-        _showErrorDialog('Authentication Failed', 'User data not found. Please register again.');
+        _showErrorDialog('Authentication Failed',
+            'User data not found. Please register again.');
         return;
       }
 
@@ -85,7 +88,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       await _initializeCamera();
     } catch (e) {
       _logger.e('Error initializing services: $e');
-      _showErrorDialog('Initialization Error', 'Failed to initialize real face recognition service');
+      _showErrorDialog('Initialization Error',
+          'Failed to initialize real face recognition service');
     }
   }
 
@@ -94,7 +98,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       // Request camera permission
       final cameraPermission = await Permission.camera.request();
       if (!cameraPermission.isGranted) {
-        _showErrorDialog('Permission Required', 'Camera permission is required for face verification');
+        _showErrorDialog('Permission Required',
+            'Camera permission is required for face verification');
         return;
       }
 
@@ -132,7 +137,10 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
   }
 
   Future<void> _verifyFace() async {
-    if (!_isCameraInitialized || _cameraController == null || _isProcessing || _storedEmbedding == null) {
+    if (!_isCameraInitialized ||
+        _cameraController == null ||
+        _isProcessing ||
+        _storedEmbedding == null) {
       return;
     }
 
@@ -155,7 +163,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       final xFile = XFile(image.path);
 
       // Extract real face embedding using TFLite
-      final currentEmbedding = await _faceAuthService.extractFaceEmbeddingFromFile(xFile.path);
+      final currentEmbedding =
+          await _faceAuthService.extractFaceEmbeddingFromFile(xFile.path);
 
       if (currentEmbedding == null) {
         authStopwatch.stop();
@@ -166,7 +175,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
         setState(() {
           _isProcessing = false;
           _isVerifying = false;
-          _errorMessage = 'No face detected or failed to extract face embedding. Please try again.';
+          _errorMessage =
+              'No face detected or failed to extract face embedding. Please try again.';
         });
         _logger.w('Failed to extract face embedding for verification');
         return;
@@ -188,22 +198,25 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       }
 
       // Calculate similarity for logging
-      final similarity = _faceAuthService.calculateCosineSimilarity(currentEmbedding, _storedEmbedding!);
+      final similarity = _faceAuthService.calculateCosineSimilarity(
+          currentEmbedding, _storedEmbedding!);
       _logger.i('Face similarity calculated: $similarity');
 
-      final isVerified = await _faceAuthService.verifyFace(currentEmbedding, _storedEmbedding!);
+      final isVerified = await _faceAuthService.verifyFace(
+          currentEmbedding, _storedEmbedding!);
 
       authStopwatch.stop();
       final totalAuthTime = authStopwatch.elapsedMilliseconds / 1000.0;
-      
+
       // Record total authentication time
       await _metricsService.recordAuthTime(totalAuthTime, success: isVerified);
-      
+
       if (isVerified) {
         await _metricsService.recordSuccessfulAuth();
       }
 
-      _logger.i('Real face verification result: $isVerified (similarity: $similarity, time: ${totalAuthTime.toStringAsFixed(3)}s)');
+      _logger.i(
+          'Real face verification result: $isVerified (similarity: $similarity, time: ${totalAuthTime.toStringAsFixed(3)}s)');
 
       if (isVerified) {
         _logger.i('Face verification successful for $_regNo');
@@ -241,7 +254,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
       _navigateToSignup();
     } else {
       setState(() {
-        _errorMessage = 'Face not recognized. Attempt ${_failedAttempts}/$_maxAttempts. Please try again.';
+        _errorMessage =
+            'Face not recognized. Attempt $_failedAttempts/$_maxAttempts. Please try again.';
       });
     }
   }
@@ -438,10 +452,13 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
                                   color: Colors.white.withOpacity(0.7),
                                   child: Center(
                                     child: Column(
-                                      mainAxisAlignment: MainAxisAlignment.center,
+                                      mainAxisAlignment:
+                                          MainAxisAlignment.center,
                                       children: [
                                         CircularProgressIndicator(
-                                          valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                          valueColor:
+                                              AlwaysStoppedAnimation<Color>(
+                                                  Colors.green),
                                         ),
                                         SizedBox(height: 16),
                                         Text(
@@ -541,7 +558,8 @@ class _FaceVerificationScreenState extends State<FaceVerificationScreen> with Wi
                           width: 24,
                           child: CircularProgressIndicator(
                             strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                            valueColor:
+                                AlwaysStoppedAnimation<Color>(Colors.white),
                           ),
                         )
                       : Row(

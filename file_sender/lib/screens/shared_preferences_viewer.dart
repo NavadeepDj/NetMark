@@ -7,7 +7,8 @@ class SharedPreferencesViewer extends StatefulWidget {
   const SharedPreferencesViewer({super.key});
 
   @override
-  _SharedPreferencesViewerState createState() => _SharedPreferencesViewerState();
+  _SharedPreferencesViewerState createState() =>
+      _SharedPreferencesViewerState();
 }
 
 class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
@@ -30,9 +31,9 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
     try {
       final prefs = await SharedPreferences.getInstance();
       final allKeys = prefs.getKeys();
-      
+
       final preferences = <String, dynamic>{};
-      
+
       for (final key in allKeys) {
         final value = prefs.get(key);
         preferences[key] = value;
@@ -85,7 +86,6 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
-                  
                   _buildSummary(),
                   SizedBox(height: 24),
                   _buildAllKeys(),
@@ -97,8 +97,9 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
 
   Widget _buildSummary() {
     final count = _allPreferences?.length ?? 0;
-    final hasPerformanceMetrics = _allPreferences?.containsKey('performance_metrics') ?? false;
-    
+    final hasPerformanceMetrics =
+        _allPreferences?.containsKey('performance_metrics') ?? false;
+
     return Card(
       elevation: 4,
       color: hasPerformanceMetrics ? Colors.green[50] : Colors.orange[50],
@@ -142,8 +143,8 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
                 children: _allPreferences!.keys.map((key) {
                   return Chip(
                     label: Text(key),
-                    backgroundColor: key == 'performance_metrics' 
-                        ? Colors.green[100] 
+                    backgroundColor: key == 'performance_metrics'
+                        ? Colors.green[100]
                         : Colors.grey[200],
                   );
                 }).toList(),
@@ -222,7 +223,7 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
               ],
             ),
           );
-        }).toList(),
+        }),
       ],
     );
   }
@@ -309,7 +310,7 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
                     style: TextStyle(fontFamily: 'monospace', fontSize: 12),
                   ),
                 );
-              }).toList()
+              })
             else
               Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -322,10 +323,11 @@ class _SharedPreferencesViewerState extends State<SharedPreferencesViewer> {
                         style: TextStyle(fontFamily: 'monospace', fontSize: 12),
                       ),
                     );
-                  }).toList(),
+                  }),
                   Text(
                     '... and ${value.length - 10} more items',
-                    style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+                    style: TextStyle(
+                        fontStyle: FontStyle.italic, color: Colors.grey),
                   ),
                 ],
               ),

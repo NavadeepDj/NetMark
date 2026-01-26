@@ -2,7 +2,6 @@ import 'dart:io';
 import 'dart:math';
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:logger/logger.dart';
 
@@ -25,7 +24,8 @@ class FaceAuthService {
       // Get MAC address
       await _getMacAddress();
       _isInitialized = true;
-      _logger.i('FaceAuthService initialized successfully (simplified version)');
+      _logger
+          .i('FaceAuthService initialized successfully (simplified version)');
     } catch (e) {
       _logger.e('Error initializing FaceAuthService: $e');
       rethrow;
@@ -41,7 +41,8 @@ class FaceAuthService {
         _macAddress = androidInfo.id; // Use Android ID as unique identifier
       } else if (Platform.isIOS) {
         IosDeviceInfo iosInfo = await deviceInfo.iosInfo;
-        _macAddress = iosInfo.identifierForVendor; // Use IDFV as unique identifier
+        _macAddress =
+            iosInfo.identifierForVendor; // Use IDFV as unique identifier
       }
 
       _logger.i('Device identifier: $_macAddress');
@@ -74,7 +75,8 @@ class FaceAuthService {
     }
   }
 
-  double calculateCosineSimilarity(List<double> embedding1, List<double> embedding2) {
+  double calculateCosineSimilarity(
+      List<double> embedding1, List<double> embedding2) {
     if (embedding1.length != embedding2.length) {
       throw ArgumentError('Embeddings must have the same length');
     }
@@ -94,14 +96,16 @@ class FaceAuthService {
     return dotProduct / (sqrt(norm1) * sqrt(norm2));
   }
 
-  Future<bool> verifyFace(List<double> currentEmbedding, List<double> storedEmbedding) async {
+  Future<bool> verifyFace(
+      List<double> currentEmbedding, List<double> storedEmbedding) async {
     try {
       // Simulate verification delay
       await Future.delayed(Duration(milliseconds: 1000));
 
       // For demo purposes, always return true if we have embeddings
       // In real implementation, this would use actual face comparison
-      final similarity = calculateCosineSimilarity(currentEmbedding, storedEmbedding);
+      final similarity =
+          calculateCosineSimilarity(currentEmbedding, storedEmbedding);
       _logger.d('Face similarity: $similarity');
 
       // For testing, we'll accept higher threshold
@@ -119,7 +123,8 @@ class FaceAuthService {
   }) async {
     try {
       // Store in Firestore
-      final CollectionReference users = FirebaseFirestore.instance.collection('users');
+      final CollectionReference users =
+          FirebaseFirestore.instance.collection('users');
 
       await users.doc(registrationNumber).set({
         'name': name,
@@ -136,7 +141,8 @@ class FaceAuthService {
       await prefs.setString('userRegNo', registrationNumber);
       await prefs.setString('userName', name);
       await prefs.setString('macAddress', _macAddress!);
-      await prefs.setStringList('faceEmbedding', faceEmbedding.map((e) => e.toString()).toList());
+      await prefs.setStringList(
+          'faceEmbedding', faceEmbedding.map((e) => e.toString()).toList());
 
       _logger.i('User registered successfully: $registrationNumber');
     } catch (e) {
@@ -145,7 +151,8 @@ class FaceAuthService {
     }
   }
 
-  Future<Map<String, dynamic>?> authenticateUser(String registrationNumber) async {
+  Future<Map<String, dynamic>?> authenticateUser(
+      String registrationNumber) async {
     try {
       // Try local storage first (offline)
       final prefs = await SharedPreferences.getInstance();
@@ -155,7 +162,8 @@ class FaceAuthService {
       if (localRegNo == registrationNumber && localMacAddress == _macAddress) {
         final localEmbeddingList = prefs.getStringList('faceEmbedding');
         if (localEmbeddingList != null) {
-          final localEmbedding = localEmbeddingList.map((e) => double.parse(e)).toList();
+          final localEmbedding =
+              localEmbeddingList.map((e) => double.parse(e)).toList();
           return {
             'name': prefs.getString('userName'),
             'registrationNumber': registrationNumber,
@@ -183,8 +191,7 @@ class FaceAuthService {
 
           if (data['faceEmbedding'] != null) {
             final embeddingList = List<String>.from(
-              data['faceEmbedding'].map((e) => e.toString())
-            );
+                data['faceEmbedding'].map((e) => e.toString()));
             await prefs.setStringList('faceEmbedding', embeddingList);
           }
 

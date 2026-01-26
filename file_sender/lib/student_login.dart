@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'services/firebase_auth_service.dart';
-import 'services/face_database_service.dart';
 import 'services/firestore_service.dart';
 import 'face_login_screen.dart';
 

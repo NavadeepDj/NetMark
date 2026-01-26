@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:file_sender/mcp/mcp_server.dart';
 
@@ -14,7 +13,6 @@ Future<void> main() async {
 
     // Start listening on stdin/stdout for MCP communication
     await mcpServer.startStdio();
-
   } catch (e, stackTrace) {
     print('❌ Failed to start MCP Server: $e');
     print('Stack trace: $stackTrace');

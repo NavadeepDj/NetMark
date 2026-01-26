@@ -8,10 +8,10 @@ class FaceVerificationCamera extends StatefulWidget {
   final RealFaceRecognitionService faceAuthService;
 
   const FaceVerificationCamera({
-    Key? key,
+    super.key,
     required this.cameraController,
     required this.faceAuthService,
-  }) : super(key: key);
+  });
 
   @override
   _FaceVerificationCameraState createState() => _FaceVerificationCameraState();
@@ -43,7 +43,8 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
         return;
       }
 
-      final userInfo = await widget.faceAuthService.authenticateUser(currentRegNo);
+      final userInfo =
+          await widget.faceAuthService.authenticateUser(currentRegNo);
       if (userInfo == null) {
         setState(() {
           _errorMessage = 'User data not found. Please register again.';
@@ -63,7 +64,9 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
   }
 
   Future<void> _verifyFace() async {
-    if (!widget.cameraController.value.isInitialized || _isProcessing || _storedEmbedding == null) {
+    if (!widget.cameraController.value.isInitialized ||
+        _isProcessing ||
+        _storedEmbedding == null) {
       return;
     }
 
@@ -79,7 +82,8 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
       _logger.i('Face verification image captured');
 
       // Extract face embedding
-      final currentEmbedding = await widget.faceAuthService.extractFaceEmbeddingFromFile(image.path);
+      final currentEmbedding =
+          await widget.faceAuthService.extractFaceEmbeddingFromFile(image.path);
 
       if (currentEmbedding == null) {
         setState(() {
@@ -93,25 +97,34 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
       // LOGGING: Show current face embedding details
       _logger.i('📸 CURRENT FACE EMBEDDING CAPTURED:');
       _logger.i('   • Embedding length: ${currentEmbedding.length} dimensions');
-      _logger.i('   • First 10 values: [${currentEmbedding.take(10).map((v) => v.toStringAsFixed(4)).join(', ')}...]');
-      _logger.i('   • Embedding hash: ${currentEmbedding.map((v) => v.toStringAsFixed(2)).join(',')}');
+      _logger.i(
+          '   • First 10 values: [${currentEmbedding.take(10).map((v) => v.toStringAsFixed(4)).join(', ')}...]');
+      _logger.i(
+          '   • Embedding hash: ${currentEmbedding.map((v) => v.toStringAsFixed(2)).join(',')}');
 
       // LOGGING: Show stored face embedding details
       _logger.i('🔒 STORED FACE EMBEDDING:');
-      _logger.i('   • Stored embedding length: ${_storedEmbedding!.length} dimensions');
-      _logger.i('   • First 10 values: [${_storedEmbedding!.take(10).map((v) => v.toStringAsFixed(4)).join(', ')}...]');
-      _logger.i('   • Stored embedding hash: ${_storedEmbedding!.map((v) => v.toStringAsFixed(2)).join(',')}');
+      _logger.i(
+          '   • Stored embedding length: ${_storedEmbedding!.length} dimensions');
+      _logger.i(
+          '   • First 10 values: [${_storedEmbedding!.take(10).map((v) => v.toStringAsFixed(4)).join(', ')}...]');
+      _logger.i(
+          '   • Stored embedding hash: ${_storedEmbedding!.map((v) => v.toStringAsFixed(2)).join(',')}');
 
       // Calculate similarity for logging
-      final similarity = widget.faceAuthService.calculateCosineSimilarity(currentEmbedding, _storedEmbedding!);
+      final similarity = widget.faceAuthService
+          .calculateCosineSimilarity(currentEmbedding, _storedEmbedding!);
       final threshold = widget.faceAuthService.faceThreshold;
       _logger.i('🎯 FACE COMPARISON:');
       _logger.i('   • Cosine similarity: ${similarity.toStringAsFixed(4)}');
-      _logger.i('   • Threshold: ${threshold.toStringAsFixed(2)}');  // Using dynamic threshold from service
-      _logger.i('   • Verification result: ${similarity >= threshold ? '✅ VERIFIED' : '❌ FAILED'}');
+      _logger.i(
+          '   • Threshold: ${threshold.toStringAsFixed(2)}'); // Using dynamic threshold from service
+      _logger.i(
+          '   • Verification result: ${similarity >= threshold ? '✅ VERIFIED' : '❌ FAILED'}');
 
       // Verify face
-      final isVerified = await widget.faceAuthService.verifyFace(currentEmbedding, _storedEmbedding!);
+      final isVerified = await widget.faceAuthService
+          .verifyFace(currentEmbedding, _storedEmbedding!);
 
       if (isVerified) {
         _logger.i('Face verification successful');
@@ -172,7 +185,8 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
                               CircularProgressIndicator(
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.green),
                               ),
                               SizedBox(height: 16),
                               Text(
@@ -266,7 +280,8 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.transparent,
                         shadowColor: Colors.transparent,
-                        padding: EdgeInsets.symmetric(horizontal: 32, vertical: 16),
+                        padding:
+                            EdgeInsets.symmetric(horizontal: 32, vertical: 16),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(25),
                         ),
@@ -278,7 +293,8 @@ class _FaceVerificationCameraState extends State<FaceVerificationCamera> {
                               width: 24,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                valueColor:
+                                    AlwaysStoppedAnimation<Color>(Colors.white),
                               ),
                             )
                           : Row(

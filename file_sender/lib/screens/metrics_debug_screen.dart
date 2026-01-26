@@ -34,7 +34,7 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
       // Get raw metrics from SharedPreferences
       final prefs = await SharedPreferences.getInstance();
       final metricsJson = prefs.getString('performance_metrics');
-      
+
       if (metricsJson != null) {
         _rawMetrics = Map<String, dynamic>.from(json.decode(metricsJson));
       } else {
@@ -90,10 +90,11 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
                         style: TextStyle(color: Colors.red),
                       ),
                     ),
-                  
-                  _buildSection('📊 Raw Metrics Data (SharedPreferences)', _buildRawMetrics()),
+                  _buildSection('📊 Raw Metrics Data (SharedPreferences)',
+                      _buildRawMetrics()),
                   SizedBox(height: 24),
-                  _buildSection('📈 Calculated Statistics', _buildCalculatedStats()),
+                  _buildSection(
+                      '📈 Calculated Statistics', _buildCalculatedStats()),
                   SizedBox(height: 24),
                   _buildSection('🔍 Data Verification', _buildVerification()),
                   SizedBox(height: 24),
@@ -159,7 +160,7 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
               ],
             ),
           );
-        }).toList(),
+        }),
         SizedBox(height: 8),
         Container(
           padding: EdgeInsets.all(12),
@@ -221,8 +222,10 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
         SizedBox(height: 8),
         _buildKeyValue('Count', '${stats['count']}'),
         _buildKeyValue('Mean', '${(stats['mean'] as num).toStringAsFixed(3)}s'),
-        _buildKeyValue('Median', '${(stats['median'] as num).toStringAsFixed(3)}s'),
-        _buildKeyValue('Std Dev', '${(stats['std_dev'] as num).toStringAsFixed(3)}s'),
+        _buildKeyValue(
+            'Median', '${(stats['median'] as num).toStringAsFixed(3)}s'),
+        _buildKeyValue(
+            'Std Dev', '${(stats['std_dev'] as num).toStringAsFixed(3)}s'),
         _buildKeyValue('Min', '${(stats['min'] as num).toStringAsFixed(3)}s'),
         _buildKeyValue('Max', '${(stats['max'] as num).toStringAsFixed(3)}s'),
         if (stats.containsKey('confidence_interval_95'))
@@ -265,10 +268,10 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
   }
 
   Widget _buildVerification() {
-    final hasData = _rawMetrics != null && 
-                    _rawMetrics!.isNotEmpty && 
-                    _rawMetrics!.containsKey('auth_times');
-    
+    final hasData = _rawMetrics != null &&
+        _rawMetrics!.isNotEmpty &&
+        _rawMetrics!.containsKey('auth_times');
+
     final authTimes = _rawMetrics?['auth_times'] as List<dynamic>?;
     final count = authTimes?.length ?? 0;
 
@@ -283,9 +286,7 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
             ),
             SizedBox(width: 8),
             Text(
-              hasData 
-                ? '✅ Data is being recorded!' 
-                : '❌ No data recorded yet',
+              hasData ? '✅ Data is being recorded!' : '❌ No data recorded yet',
               style: TextStyle(
                 fontWeight: FontWeight.bold,
                 fontSize: 16,
@@ -311,13 +312,16 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
                 style: TextStyle(fontFamily: 'monospace'),
               ),
             );
-          }).toList(),
+          }),
         ],
         SizedBox(height: 16),
-        _buildKeyValue('Total Auth Attempts', '${_rawMetrics?['total_auth_attempts'] ?? 0}'),
-        _buildKeyValue('Successful Auths', '${_rawMetrics?['successful_auths'] ?? 0}'),
+        _buildKeyValue('Total Auth Attempts',
+            '${_rawMetrics?['total_auth_attempts'] ?? 0}'),
+        _buildKeyValue(
+            'Successful Auths', '${_rawMetrics?['successful_auths'] ?? 0}'),
         _buildKeyValue('Failed Auths', '${_rawMetrics?['failed_auths'] ?? 0}'),
-        _buildKeyValue('Fraud Attempts', '${_rawMetrics?['fraud_attempts'] ?? 0}'),
+        _buildKeyValue(
+            'Fraud Attempts', '${_rawMetrics?['fraud_attempts'] ?? 0}'),
       ],
     );
   }
@@ -338,7 +342,8 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
                 context: context,
                 builder: (context) => AlertDialog(
                   title: Text('Clear Metrics?'),
-                  content: Text('This will delete all recorded metrics. Continue?'),
+                  content:
+                      Text('This will delete all recorded metrics. Continue?'),
                   actions: [
                     TextButton(
                       onPressed: () => Navigator.pop(context, false),
@@ -346,8 +351,10 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
                     ),
                     ElevatedButton(
                       onPressed: () => Navigator.pop(context, true),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
-                      child: Text('Clear', style: TextStyle(color: Colors.white)),
+                      style:
+                          ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                      child:
+                          Text('Clear', style: TextStyle(color: Colors.white)),
                     ),
                   ],
                 ),
@@ -409,7 +416,8 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
           Text(key, style: TextStyle(color: Colors.grey[700])),
           Text(
             value,
-            style: TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
+            style:
+                TextStyle(fontWeight: FontWeight.bold, fontFamily: 'monospace'),
           ),
         ],
       ),
@@ -431,7 +439,7 @@ class _MetricsDebugScreenState extends State<MetricsDebugScreen> {
               'List (${value.length} items)',
               style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
             ),
-            if (value.length > 0) ...[
+            if (value.isNotEmpty) ...[
               SizedBox(height: 4),
               Text(
                 value.length <= 10

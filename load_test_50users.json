@@ -1,0 +1,23 @@
+{
+  "timestamp": "2026-01-26T16:39:17.024595",
+  "test_config": {
+    "base_url": "http://127.0.0.1:5000",
+    "endpoint": "/attendance_stats"
+  },
+  "results": {
+    "total_requests": 500,
+    "successful_requests": 500,
+    "failed_requests": 0,
+    "success_rate": 1.0,
+    "total_time_seconds": 3.24335549999887,
+    "throughput_rps": 154.16133075765953,
+    "mean_response_time_ms": 254.53438059998007,
+    "median_response_time_ms": 250.69065000025148,
+    "min_response_time_ms": 21.23600000049919,
+    "max_response_time_ms": 434.8575999993045,
+    "std_dev_ms": 74.79616584594132,
+    "p95_response_time_ms": 405.6805999989592,
+    "p99_response_time_ms": 425.99110000082874
+  },
+  "errors": []
+}
