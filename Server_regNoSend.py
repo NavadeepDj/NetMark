@@ -3,6 +3,9 @@ import pandas as pd
 import os
 import datetime
 import logging
+import time
+import threading
+from collections import defaultdict
 
 app = Flask(__name__)
 
@@ -10,9 +13,21 @@ CSV_FILE = "user_data.csv"
 VERIFIED_IDS_FILE = "verified_ids.csv"
 IP_TRACKING_FILE = "ip_tracking.csv"
 LOGS_FILE = "logs.csv"
+SCALABILITY_METRICS_FILE = "scalability_metrics.csv"
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
+
+# In-memory metrics storage for scalability testing
+_scalability_metrics = {
+    'response_times': defaultdict(list),  # endpoint -> [response_times]
+    'concurrent_requests': 0,
+    'total_requests': 0,
+    'failed_requests': 0,
+    'start_time': None,
+    'test_active': False
+}
+_metrics_lock = threading.Lock()
 
 def _ensure_logs_file():
     """Ensure logs.csv exists with the correct header."""
@@ -59,6 +74,24 @@ def log_face_verification():
     except Exception as e:
         logging.exception("Error logging face verification")
         return jsonify({"error": f"Error logging face verification: {e}"}), 500
+
+# Middleware to track response times for scalability analysis
+@app.before_request
+def before_request():
+    if _scalability_metrics['test_active']:
+        request.start_time = time.perf_counter()
+
+@app.after_request
+def after_request(response):
+    if _scalability_metrics['test_active'] and hasattr(request, 'start_time'):
+        response_time = time.perf_counter() - request.start_time
+        endpoint = request.endpoint or request.path
+        with _metrics_lock:
+            _scalability_metrics['response_times'][endpoint].append(response_time)
+            _scalability_metrics['total_requests'] += 1
+            if response.status_code >= 400:
+                _scalability_metrics['failed_requests'] += 1
+    return response
 
 @app.route('/upload_csv', methods=['POST'])
 def upload_csv():
@@ -342,6 +375,200 @@ def mark_attendance():
     except Exception as e:
         logging.error(f"Error recording attendance: {e}")
         return jsonify({"error": f"Error recording attendance: {e}"}), 500
+
+@app.route('/stress_test/start', methods=['POST'])
+def start_stress_test():
+    """Start tracking metrics for stress testing."""
+    try:
+        data = request.get_json() or {}
+        concurrent_users = int(data.get('concurrentUsers', 10))
+        
+        if concurrent_users < 1 or concurrent_users > 1000:
+            return jsonify({"error": "concurrentUsers must be between 1 and 1000"}), 400
+        
+        # Reset and start metrics tracking
+        with _metrics_lock:
+            _scalability_metrics['response_times'].clear()
+            _scalability_metrics['concurrent_requests'] = concurrent_users
+            _scalability_metrics['total_requests'] = 0
+            _scalability_metrics['failed_requests'] = 0
+            _scalability_metrics['start_time'] = time.perf_counter()
+            _scalability_metrics['test_active'] = True
+        
+        logging.info(f"Stress test tracking started: expecting {concurrent_users} concurrent users")
+        
+        return jsonify({
+            "message": "Stress test tracking started",
+            "concurrentUsers": concurrent_users,
+            "status": "tracking",
+            "instructions": "Send requests to any endpoint. Metrics will be tracked automatically."
+        }), 200
+        
+    except Exception as e:
+        logging.exception("Error starting stress test tracking")
+        return jsonify({"error": f"Error starting stress test: {e}"}), 500
+
+@app.route('/stress_test/stop', methods=['POST'])
+def stop_stress_test():
+    """Stop tracking metrics and generate report."""
+    try:
+        with _metrics_lock:
+            _scalability_metrics['test_active'] = False
+        
+        logging.info("Stress test tracking stopped")
+        
+        return jsonify({
+            "message": "Stress test tracking stopped",
+            "status": "stopped",
+            "metrics_available": "/scalability_metrics",
+            "report_available": "/scalability_report"
+        }), 200
+        
+    except Exception as e:
+        logging.exception("Error stopping stress test")
+        return jsonify({"error": f"Error stopping stress test: {e}"}), 500
+
+@app.route('/scalability_metrics', methods=['GET'])
+def get_scalability_metrics():
+    """Get current scalability metrics."""
+    try:
+        with _metrics_lock:
+            metrics = {}
+            
+            # Calculate statistics for each endpoint
+            for endpoint, times in _scalability_metrics['response_times'].items():
+                if times:
+                    times_sorted = sorted(times)
+                    n = len(times)
+                    metrics[endpoint] = {
+                        'total_requests': n,
+                        'mean_response_time': sum(times) / n,
+                        'median_response_time': times_sorted[n // 2] if n > 0 else 0,
+                        'min_response_time': min(times),
+                        'max_response_time': max(times),
+                        'p95_response_time': times_sorted[int(n * 0.95)] if n > 1 else times[0],
+                        'p99_response_time': times_sorted[int(n * 0.99)] if n > 1 else times[0],
+                    }
+            
+            return jsonify({
+                'concurrent_users': _scalability_metrics['concurrent_requests'],
+                'total_requests': _scalability_metrics['total_requests'],
+                'failed_requests': _scalability_metrics['failed_requests'],
+                'success_rate': (_scalability_metrics['total_requests'] - _scalability_metrics['failed_requests']) / max(_scalability_metrics['total_requests'], 1),
+                'test_active': _scalability_metrics['test_active'],
+                'endpoint_metrics': metrics,
+                'elapsed_time': time.perf_counter() - _scalability_metrics['start_time'] if _scalability_metrics['start_time'] else 0
+            }), 200
+            
+    except Exception as e:
+        logging.exception("Error getting scalability metrics")
+        return jsonify({"error": f"Error getting metrics: {e}"}), 500
+
+@app.route('/scalability_report', methods=['GET'])
+def generate_scalability_report():
+    """Generate comprehensive scalability report."""
+    try:
+        with _metrics_lock:
+            if not _scalability_metrics['response_times']:
+                return jsonify({"error": "No metrics collected yet. Run stress test first."}), 400
+            
+            report = {
+                'timestamp': datetime.datetime.now().isoformat(),
+                'test_summary': {
+                    'concurrent_users': _scalability_metrics['concurrent_requests'],
+                    'total_requests': _scalability_metrics['total_requests'],
+                    'failed_requests': _scalability_metrics['failed_requests'],
+                    'success_rate': (_scalability_metrics['total_requests'] - _scalability_metrics['failed_requests']) / max(_scalability_metrics['total_requests'], 1),
+                    'elapsed_time': time.perf_counter() - _scalability_metrics['start_time'] if _scalability_metrics['start_time'] else 0
+                },
+                'endpoint_analysis': {}
+            }
+            
+            # Analyze each endpoint
+            for endpoint, times in _scalability_metrics['response_times'].items():
+                if times:
+                    times_sorted = sorted(times)
+                    n = len(times)
+                    mean_time = sum(times) / n
+                    
+                    # Calculate throughput (requests per second)
+                    elapsed = report['test_summary']['elapsed_time']
+                    throughput = n / elapsed if elapsed > 0 else 0
+                    
+                    # Calculate standard deviation
+                    variance = sum((t - mean_time) ** 2 for t in times) / n
+                    std_dev = variance ** 0.5
+                    
+                    report['endpoint_analysis'][endpoint] = {
+                        'total_requests': n,
+                        'mean_response_time_ms': mean_time * 1000,
+                        'median_response_time_ms': times_sorted[n // 2] * 1000,
+                        'std_dev_ms': std_dev * 1000,
+                        'min_response_time_ms': min(times) * 1000,
+                        'max_response_time_ms': max(times) * 1000,
+                        'p95_response_time_ms': times_sorted[int(n * 0.95)] * 1000 if n > 1 else times[0] * 1000,
+                        'p99_response_time_ms': times_sorted[int(n * 0.99)] * 1000 if n > 1 else times[0] * 1000,
+                        'throughput_rps': throughput,
+                        'error_rate': _scalability_metrics['failed_requests'] / max(n, 1)
+                    }
+            
+            # Save report to CSV
+            _save_scalability_report(report)
+            
+            return jsonify(report), 200
+            
+    except Exception as e:
+        logging.exception("Error generating scalability report")
+        return jsonify({"error": f"Error generating report: {e}"}), 500
+
+def _save_scalability_report(report):
+    """Save scalability report to CSV file."""
+    try:
+        import csv
+        
+        # Append to CSV file (don't overwrite, accumulate results)
+        file_exists = os.path.exists(SCALABILITY_METRICS_FILE)
+        
+        with open(SCALABILITY_METRICS_FILE, 'a', newline='', encoding='utf-8') as f:
+            writer = csv.writer(f)
+            
+            # Write header if file is new
+            if not file_exists:
+                writer.writerow([
+                    'Timestamp',
+                    'Endpoint',
+                    'Concurrent Users',
+                    'Total Requests',
+                    'Failed Requests',
+                    'Success Rate',
+                    'Mean Response Time (ms)',
+                    'Median Response Time (ms)',
+                    'P95 Response Time (ms)',
+                    'P99 Response Time (ms)',
+                    'Throughput (req/s)',
+                    'Error Rate'
+                ])
+            
+            # Append data rows
+            for endpoint, metrics in report['endpoint_analysis'].items():
+                writer.writerow([
+                    report['timestamp'],
+                    endpoint,
+                    report['test_summary']['concurrent_users'],
+                    metrics['total_requests'],
+                    report['test_summary']['failed_requests'],
+                    f"{report['test_summary']['success_rate']:.4f}",
+                    f"{metrics['mean_response_time_ms']:.3f}",
+                    f"{metrics['median_response_time_ms']:.3f}",
+                    f"{metrics['p95_response_time_ms']:.3f}",
+                    f"{metrics['p99_response_time_ms']:.3f}",
+                    f"{metrics['throughput_rps']:.2f}",
+                    f"{metrics['error_rate']:.4f}"
+                ])
+        
+        logging.info(f"Scalability report saved to {SCALABILITY_METRICS_FILE}")
+    except Exception as e:
+        logging.error(f"Error saving scalability report: {e}")
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)

@@ -1,0 +1,9 @@
+# Stress test logs
+# stress_test_logs/
+# *.log
+
+# Test results (keep structure, but can be regenerated)
+# load_test_*.json
+
+# Keep scalability metrics CSV (contains test data)
+# scalability_metrics.csv
