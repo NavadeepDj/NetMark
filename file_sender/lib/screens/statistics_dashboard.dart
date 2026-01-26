@@ -240,6 +240,146 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
                     'Standard Error: ${((stats['standard_error'] as double) * 100).toStringAsFixed(2)}%',
                     style: TextStyle(fontSize: 12, color: Colors.grey[700]),
                   ),
+                  if (stats.containsKey('false_acceptance_rate'))
+                    Text(
+                      'False Acceptance Rate: ${((stats['false_acceptance_rate'] as double) * 100).toStringAsFixed(2)}%',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    ),
+                  if (stats.containsKey('false_rejection_rate'))
+                    Text(
+                      'False Rejection Rate: ${((stats['false_rejection_rate'] as double) * 100).toStringAsFixed(2)}%',
+                      style: TextStyle(fontSize: 12, color: Colors.grey[700]),
+                    ),
+                ],
+              ),
+            ),
+            if (stats.containsKey('baseline_comparison') && 
+                (stats['baseline_comparison'] as Map).isNotEmpty)
+              _buildBaselineComparisonCard(stats['baseline_comparison'] as Map<String, dynamic>),
+            if (stats.containsKey('statistical_significance') && 
+                (stats['statistical_significance'] as Map).isNotEmpty)
+              _buildSignificanceTestCard(stats['statistical_significance'] as Map<String, dynamic>),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildBaselineComparisonCard(Map<String, dynamic> baseline) {
+    final exceedsBaseline = baseline['exceeds_baseline'] as bool? ?? false;
+    final performanceLevel = baseline['performance_level'] as String? ?? 'Unknown';
+    final industryBaseline = baseline['industry_baseline'] as double? ?? 0.0;
+    final percentDifference = baseline['percent_difference'] as double? ?? 0.0;
+    
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.only(top: 16),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  exceedsBaseline ? Icons.trending_up : Icons.trending_down,
+                  color: exceedsBaseline ? Colors.green : Colors.orange,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Baseline Comparison',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            _buildStatRow('Industry Baseline', '${(industryBaseline * 100).toStringAsFixed(1)}%'),
+            _buildStatRow('Performance Level', performanceLevel),
+            _buildStatRow(
+              'Difference from Baseline',
+              '${percentDifference >= 0 ? '+' : ''}${percentDifference.toStringAsFixed(2)}%',
+            ),
+            SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: exceedsBaseline ? Colors.green[50] : Colors.orange[50],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Text(
+                baseline['baseline_source'] as String? ?? 'Industry standard',
+                style: TextStyle(fontSize: 11, color: Colors.grey[700], fontStyle: FontStyle.italic),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSignificanceTestCard(Map<String, dynamic> significance) {
+    final pValue = significance['p_value'] as double? ?? 1.0;
+    final isSignificant = significance['significant'] as bool? ?? false;
+    final zScore = significance['z_score'] as double? ?? 0.0;
+    final testType = significance['test_type'] as String? ?? 'Unknown';
+    final interpretation = significance['interpretation'] as String? ?? '';
+    
+    return Card(
+      elevation: 2,
+      margin: EdgeInsets.only(top: 16),
+      child: Padding(
+        padding: EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(
+              children: [
+                Icon(
+                  isSignificant ? Icons.check_circle : Icons.info,
+                  color: isSignificant ? Colors.green : Colors.blue,
+                ),
+                SizedBox(width: 8),
+                Text(
+                  'Statistical Significance Test',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                ),
+              ],
+            ),
+            SizedBox(height: 12),
+            _buildStatRow('Test Type', testType),
+            _buildStatRow('Z-Score', zScore.toStringAsFixed(3)),
+            _buildStatRow('P-Value', pValue.toStringAsFixed(4)),
+            _buildStatRow(
+              'Significant (α=0.05)',
+              isSignificant ? '✅ Yes' : '❌ No',
+            ),
+            SizedBox(height: 8),
+            Container(
+              padding: EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: Colors.blue[50],
+                borderRadius: BorderRadius.circular(4),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Interpretation:',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 12),
+                  ),
+                  SizedBox(height: 4),
+                  Text(
+                    interpretation,
+                    style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                  ),
+                  if (significance.containsKey('null_hypothesis'))
+                    Padding(
+                      padding: EdgeInsets.only(top: 4),
+                      child: Text(
+                        'H₀: ${significance['null_hypothesis']}',
+                        style: TextStyle(fontSize: 10, color: Colors.grey[600], fontStyle: FontStyle.italic),
+                      ),
+                    ),
                 ],
               ),
             ),
