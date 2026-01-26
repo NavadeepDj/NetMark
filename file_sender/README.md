@@ -1232,13 +1232,16 @@ The following results were obtained from empirical stress testing:
 
 #### **Results Summary**
 
-| Concurrent Users | Total Requests | Success Rate | Mean Response Time (ms) | Median (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) |
-|------------------|----------------|--------------|-------------------------|-------------|----------|----------|-------------------|
-| **5**             | 50             | **100%**     | 21.97                   | 18.73       | 49.22    | 51.81    | **66.73**         |
-| **10**            | 100            | **100%**     | -                        | -           | -        | -        | -                 |
-| **20**            | 200            | **100%**     | 75.56                   | 69.85       | 124.19   | 141.33   | **151.88**        |
-| **50**            | 500            | **100%**     | 254.53                  | 250.69      | 405.68   | 425.99   | **154.16**        |
-| **100**           | 500            | **100%**     | -                        | -           | -        | -        | -                 |
+| Concurrent Users | Total Requests | Success Rate | Mean Response Time (ms) | Median (ms) | P95 (ms) | P99 (ms) | Throughput (req/s) | Status |
+|------------------|----------------|--------------|-------------------------|-------------|----------|----------|-------------------|--------|
+| **5**             | 50             | **100%**     | 21.97                   | 18.73       | 49.22    | 51.81    | **66.73**         | ✅ Optimal |
+| **10**            | 100            | **100%**     | 40.10                   | 38.28       | 69.78    | 83.46    | **104.36**        | ✅ Optimal |
+| **20**            | 200            | **100%**     | 75.56                   | 69.85       | 124.19   | 141.33   | **151.88**        | ✅ Good |
+| **50**            | 500            | **100%**     | 254.53                  | 250.69      | 405.68   | 425.99   | **154.16**        | ✅ Acceptable |
+| **100**           | 500            | **100%**     | 470.68                  | 529.05      | 551.56   | 565.36   | **167.14**        | ⚠️ Degraded |
+| **150**           | 750            | **100%**     | 778.23                  | 656.02      | 1703.20  | 2169.66  | **159.89**        | ✅ Passed |
+| **200**           | 1000           | **98.4%**    | 887.26                  | 654.74      | 2271.47  | 2822.70  | **164.20**        | ⚠️ Degradation |
+| **250**           | 1250           | **94.56%**   | 890.85                  | 658.48      | 2219.30  | 2613.37  | **190.07**        | 🚨 **Breaking Point** |
 
 #### **Detailed Test Results**
 
@@ -1342,22 +1345,37 @@ The following results were obtained from empirical stress testing:
    - **5 users**: ~22ms mean (excellent)
    - **20 users**: ~76ms mean (good)
    - **50 users**: ~255ms mean (acceptable)
-   - **Conclusion**: Response time increases linearly with load, showing predictable scaling
+   - **100 users**: ~471ms mean (degraded but functional)
+   - **150 users**: ~778ms mean (still 100% success)
+   - **200 users**: ~887ms mean (98.4% success, degradation begins)
+   - **250 users**: ~891ms mean (94.56% success, breaking point)
+   - **Conclusion**: Response time increases predictably with load, showing linear scaling up to 200 users
 
 2. **Throughput**:
-   - System maintains **~150-155 requests/second** throughput across different load levels
-   - Throughput remains stable even with 50 concurrent users
-   - **Conclusion**: System handles concurrent requests efficiently
+   - System maintains **~150-190 requests/second** throughput across different load levels
+   - Throughput remains stable even at high concurrent user counts
+   - **Peak throughput**: ~190 req/s at 250 users
+   - **Conclusion**: System handles concurrent requests efficiently, throughput not a bottleneck
 
 3. **Success Rate**:
-   - **100% success rate** across all test scenarios
-   - No errors or failures detected
-   - **Conclusion**: System is reliable under tested load conditions
+   - **100% success rate** up to 150 concurrent users
+   - **98.4% success rate** at 200 concurrent users (16 connection errors)
+   - **94.56% success rate** at 250 concurrent users (68 connection errors)
+   - **Conclusion**: System gracefully degrades rather than crashing
 
-4. **Scalability Limits**:
+4. **Breaking Point Analysis**:
+   - **Breaking Point Identified**: **250 concurrent users** (success rate < 95%)
+   - **Failure Mode**: Connection errors (server queue full), not crashes
+   - **System Behavior**: Gracefully rejects excess connections while processing existing requests
+   - **No Server Crashes**: System remains functional, just unable to accept new connections
+
+5. **Scalability Limits**:
    - **Optimal performance**: Up to 20 concurrent users (< 100ms mean response time)
-   - **Acceptable performance**: Up to 50 concurrent users (< 500ms P95)
-   - **Recommended limit**: 20-50 concurrent users for classroom environments
+   - **Acceptable performance**: Up to 150 concurrent users (100% success rate)
+   - **Degradation begins**: 200 concurrent users (98.4% success)
+   - **Breaking point**: **250 concurrent users** (94.56% success)
+   - **Recommended limit**: 20-50 concurrent users for typical classroom environments
+   - **Maximum capacity**: 150-200 concurrent users for production use
 
 ### 📝 Test Logs
 
@@ -1423,11 +1441,56 @@ python load_test.py \
 
 See [API Documentation](#-api-documentation) for detailed endpoint documentation.
 
+### 🚨 Breaking Point Analysis
+
+#### **Breaking Point Test Results**
+
+To identify the exact breaking point, we conducted progressive load testing:
+
+| Concurrent Users | Success Rate | Failed Requests | Error Type | Mean Response Time (ms) | Status |
+|------------------|-------------|-----------------|------------|-------------------------|--------|
+| **150**          | **100%**    | 0               | None       | 778.23                  | ✅ Passed |
+| **200**          | **98.4%**   | 16              | Connection | 887.26                  | ⚠️ Degradation |
+| **250**          | **94.56%**  | 68              | Connection | 890.85                  | 🚨 **Breaking Point** |
+
+#### **Key Findings**
+
+1. **Breaking Point**: **250 concurrent users**
+   - Success rate drops below 95% threshold
+   - 68 connection errors (server unable to accept new connections)
+   - System does **not crash** - gracefully rejects excess connections
+
+2. **Degradation Point**: **200 concurrent users**
+   - Success rate: 98.4%
+   - 16 connection errors begin to appear
+   - Performance still acceptable for most use cases
+
+3. **Failure Mode**:
+   - **Connection errors** (not server crashes)
+   - Flask single-threaded server connection queue becomes full
+   - Server continues processing existing requests
+   - New connections are rejected gracefully
+
+4. **For Academic Review**:
+   > "Our empirical stress testing shows that the system does not crash, but rather gracefully degrades. The breaking point (defined as success rate < 95%) occurs at **250 concurrent users**, where connection errors begin as the Flask server's connection queue becomes full. The system maintains 100% success rate up to 150 concurrent users, and 98.4% success rate at 200 concurrent users. For typical classroom environments (20-50 concurrent users), the system performs optimally with 100% success rate and sub-100ms response times."
+
+#### **Breaking Point Testing Script**
+
+To reproduce or extend these tests:
+
+```bash
+python find_breaking_point.py --start 100 --max 500 --step 50 --requests 5
+```
+
+This script tests progressively higher loads until the breaking point is identified.
+
 ### 📚 Additional Resources
 
 - **`STRESS_TESTING_GUIDE.md`** - Complete stress testing guide
 - **`test_stress_testing.md`** - Quick test guide
-- **`REVIEWER_CONCERNS_ADDRESSED.md`** - How testing addresses reviewer concerns
+- **`REVIEWER_RESPONSE_SCALABILITY.md`** - Comprehensive response to reviewer concerns
+- **`SCALABILITY_SUMMARY.md`** - Quick reference for scalability findings
+- **`find_breaking_point.py`** - Script to identify system breaking points
 
 ### ✅ Validation
 
@@ -1439,9 +1502,12 @@ See [API Documentation](#-api-documentation) for detailed endpoint documentation
 - ✅ Empirical stress testing implemented (`load_test.py`)
 - ✅ Controlled load testing with configurable parameters
 - ✅ Quantitative measurements (response time, throughput, error rates)
-- ✅ Multiple test scenarios (5, 10, 20, 50, 100 concurrent users)
+- ✅ Multiple test scenarios (5, 10, 20, 50, 100, 150, 200, 250 concurrent users)
+- ✅ Breaking point analysis (`find_breaking_point.py`) - Identified breaking point at 250 users
 - ✅ Comprehensive reporting (CSV, JSON, logs)
 - ✅ Automated test suite (`run_stress_tests.ps1` / `run_stress_tests.sh`)
+- ✅ **Breaking point identified**: 250 concurrent users (94.56% success rate)
+- ✅ **System behavior**: Graceful degradation (no crashes, connection errors only)
 
 ---
 
