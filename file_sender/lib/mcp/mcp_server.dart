@@ -471,7 +471,7 @@ class MCPServer {
         } catch (e) {
           final errorResponse = {
             'jsonrpc': '2.0',
-            'id': request['id'] ?? null,
+            'id': request['id'],
             'error': {
               'code': -32603,
               'message': 'Internal error: $e'

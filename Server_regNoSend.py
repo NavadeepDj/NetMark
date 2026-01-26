@@ -9,9 +9,56 @@ app = Flask(__name__)
 CSV_FILE = "user_data.csv"
 VERIFIED_IDS_FILE = "verified_ids.csv"
 IP_TRACKING_FILE = "ip_tracking.csv"
+LOGS_FILE = "logs.csv"
 
 # Set up logging
 logging.basicConfig(level=logging.INFO)
+
+def _ensure_logs_file():
+    """Ensure logs.csv exists with the correct header."""
+    header = "Registration Number,Timestamp,Face Verification Time (Seconds)\n"
+    if not os.path.exists(LOGS_FILE):
+        with open(LOGS_FILE, "w", encoding="utf-8") as f:
+            f.write(header)
+        return
+    # If file exists but is empty, add header
+    if os.path.getsize(LOGS_FILE) == 0:
+        with open(LOGS_FILE, "w", encoding="utf-8") as f:
+            f.write(header)
+
+@app.route('/log_face_verification', methods=['POST'])
+def log_face_verification():
+    """Append one face verification cycle timing to logs.csv."""
+    try:
+        data = request.get_json(force=True, silent=True) or {}
+        registration_number = str(data.get('registrationNumber', '')).strip()
+        time_seconds = data.get('timeSeconds', None)
+        timestamp = data.get('timestamp', None)
+
+        if not registration_number:
+            return jsonify({"error": "registrationNumber is required"}), 400
+        if time_seconds is None:
+            return jsonify({"error": "timeSeconds is required"}), 400
+
+        # Timestamp: use client-provided ISO string if present, else server time
+        if not timestamp:
+            timestamp = datetime.datetime.now().isoformat()
+
+        # Normalize time to 3 decimal places string
+        try:
+            time_seconds_val = float(time_seconds)
+        except Exception:
+            return jsonify({"error": "timeSeconds must be a number"}), 400
+
+        _ensure_logs_file()
+
+        with open(LOGS_FILE, "a", encoding="utf-8") as f:
+            f.write(f"{registration_number},{timestamp},{time_seconds_val:.3f}\n")
+
+        return jsonify({"message": "logged", "status": "success"}), 200
+    except Exception as e:
+        logging.exception("Error logging face verification")
+        return jsonify({"error": f"Error logging face verification: {e}"}), 500
 
 @app.route('/upload_csv', methods=['POST'])
 def upload_csv():

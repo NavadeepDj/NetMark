@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:logger/logger.dart';
 import '../services/performance_metrics_service.dart';
-import 'dart:math' as math;
 import 'metrics_debug_screen.dart';
 
 /// Statistics Dashboard for Faculty - Shows performance metrics and statistical analysis
@@ -15,7 +14,7 @@ class StatisticsDashboard extends StatefulWidget {
 class _StatisticsDashboardState extends State<StatisticsDashboard> {
   final PerformanceMetricsService _metricsService = PerformanceMetricsService();
   final Logger _logger = Logger();
-  
+
   Map<String, dynamic>? _authTimeStats;
   Map<String, dynamic>? _accuracyStats;
   bool _isLoading = true;
@@ -31,7 +30,7 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
     try {
       final authStats = await _metricsService.getAuthTimeStatistics();
       final accStats = await _metricsService.getAccuracyStatistics();
-      
+
       setState(() {
         _authTimeStats = authStats;
         _accuracyStats = accStats;
@@ -80,7 +79,8 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
                   SizedBox(height: 16),
                   _buildAuthTimeCard(),
                   SizedBox(height: 24),
-                  _buildSectionTitle('2. Accuracy & Fraud Prevention Statistics'),
+                  _buildSectionTitle(
+                      '2. Accuracy & Fraud Prevention Statistics'),
                   SizedBox(height: 16),
                   _buildAccuracyCard(),
                   SizedBox(height: 24),
@@ -125,12 +125,18 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
             _buildStatRow('Total Samples', '${stats['count']}'),
             Divider(),
             _buildStatRow('Mean Time', '${mean.toStringAsFixed(3)} seconds'),
-            _buildStatRow('Median Time', '${(stats['median'] as double).toStringAsFixed(3)} seconds'),
-            _buildStatRow('Standard Deviation', '${(stats['std_dev'] as double).toStringAsFixed(3)} seconds'),
-            _buildStatRow('Minimum Time', '${(stats['min'] as double).toStringAsFixed(3)} seconds'),
-            _buildStatRow('Maximum Time', '${(stats['max'] as double).toStringAsFixed(3)} seconds'),
-            _buildStatRow('95th Percentile', '${(stats['p95'] as double).toStringAsFixed(3)} seconds'),
-            _buildStatRow('99th Percentile', '${(stats['p99'] as double).toStringAsFixed(3)} seconds'),
+            _buildStatRow('Median Time',
+                '${(stats['median'] as double).toStringAsFixed(3)} seconds'),
+            _buildStatRow('Standard Deviation',
+                '${(stats['std_dev'] as double).toStringAsFixed(3)} seconds'),
+            _buildStatRow('Minimum Time',
+                '${(stats['min'] as double).toStringAsFixed(3)} seconds'),
+            _buildStatRow('Maximum Time',
+                '${(stats['max'] as double).toStringAsFixed(3)} seconds'),
+            _buildStatRow('95th Percentile',
+                '${(stats['p95'] as double).toStringAsFixed(3)} seconds'),
+            _buildStatRow('99th Percentile',
+                '${(stats['p99'] as double).toStringAsFixed(3)} seconds'),
             Divider(),
             Container(
               padding: EdgeInsets.all(12),
@@ -194,13 +200,18 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _buildStatRow('Total Authentication Attempts', '${stats['total_attempts']}'),
-            _buildStatRow('Successful Authentications', '${stats['successful']}'),
+            _buildStatRow(
+                'Total Authentication Attempts', '${stats['total_attempts']}'),
+            _buildStatRow(
+                'Successful Authentications', '${stats['successful']}'),
             _buildStatRow('Failed Authentications', '${stats['failed']}'),
-            _buildStatRow('Fraud Attempts Detected', '${stats['fraud_attempts']}'),
+            _buildStatRow(
+                'Fraud Attempts Detected', '${stats['fraud_attempts']}'),
             Divider(),
-            _buildStatRow('Accuracy Rate', '${(accuracyRate * 100).toStringAsFixed(2)}%'),
-            _buildStatRow('Fraud Prevention Rate', '${(fraudPreventionRate * 100).toStringAsFixed(2)}%'),
+            _buildStatRow(
+                'Accuracy Rate', '${(accuracyRate * 100).toStringAsFixed(2)}%'),
+            _buildStatRow('Fraud Prevention Rate',
+                '${(fraudPreventionRate * 100).toStringAsFixed(2)}%'),
             Divider(),
             Container(
               padding: EdgeInsets.all(12),
@@ -253,10 +264,12 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
             SizedBox(height: 16),
             _buildValidationItem(
               'Sample Size',
-              _authTimeStats?['count'] != null && (_authTimeStats!['count'] as int) >= 30
+              _authTimeStats?['count'] != null &&
+                      (_authTimeStats!['count'] as int) >= 30
                   ? '✅ Sufficient (n ≥ 30)'
                   : '⚠️ Small sample (n < 30)',
-              _authTimeStats?['count'] != null && (_authTimeStats!['count'] as int) >= 30,
+              _authTimeStats?['count'] != null &&
+                  (_authTimeStats!['count'] as int) >= 30,
             ),
             _buildValidationItem(
               'Confidence Intervals',
@@ -265,10 +278,14 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
             ),
             _buildValidationItem(
               'Performance Claims',
-              _authTimeStats != null && _authTimeStats!['count'] != null && _authTimeStats!['count'] > 0
+              _authTimeStats != null &&
+                      _authTimeStats!['count'] != null &&
+                      _authTimeStats!['count'] > 0
                   ? _validatePerformanceClaims()
                   : '⏳ Collecting data...',
-              _authTimeStats != null && _authTimeStats!['count'] != null && _authTimeStats!['count'] > 0,
+              _authTimeStats != null &&
+                  _authTimeStats!['count'] != null &&
+                  _authTimeStats!['count'] > 0,
             ),
             _buildValidationItem(
               'Statistical Methods',
@@ -283,12 +300,13 @@ class _StatisticsDashboardState extends State<StatisticsDashboard> {
 
   String _validatePerformanceClaims() {
     if (_authTimeStats == null) return '⏳ No data';
-    
+
     final mean = _authTimeStats!['mean'] as double;
-    final ci = _authTimeStats!['confidence_interval_95'] as Map<String, dynamic>;
+    final ci =
+        _authTimeStats!['confidence_interval_95'] as Map<String, dynamic>;
     final lower = ci['lower'] as double;
     final upper = ci['upper'] as double;
-    
+
     // Validate 1-3 seconds claim
     if (lower >= 1.0 && upper <= 3.0) {
       return '✅ Authentication time (1-3s) validated: ${mean.toStringAsFixed(3)}s [${lower.toStringAsFixed(3)}-${upper.toStringAsFixed(3)}s]';

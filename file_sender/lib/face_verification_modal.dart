@@ -1,19 +1,28 @@
+import 'dart:io';
+import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:camera/camera.dart';
 import 'package:permission_handler/permission_handler.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:http/http.dart' as http;
 import 'services/face_auth_service.dart';
+import 'config.dart';
 
 class FaceVerificationModal extends StatefulWidget {
-  final Map<String, List<double>> storedEmbeddings; // registrationNumber -> embedding
+  final Map<String, List<double>>
+      storedEmbeddings; // registrationNumber -> embedding
   final Function(String) onSuccess; // Returns registration number
   final VoidCallback onCancel;
+  // Registration number entered by the user (used for logging when no match is found)
+  final String expectedRegNumber;
 
   const FaceVerificationModal({
     super.key,
     required this.storedEmbeddings,
     required this.onSuccess,
     required this.onCancel,
+    required this.expectedRegNumber,
   });
 
   @override
@@ -26,7 +35,6 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
   bool _isInitialized = false;
   bool _isProcessing = false;
   String _statusMessage = "Position your face in the frame";
-  String? _authenticatedUser;
 
   @override
   void initState() {
@@ -42,7 +50,8 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
         status = await Permission.camera.request();
         if (!status.isGranted) {
           setState(() {
-            _statusMessage = "Camera permission denied. Please enable camera access in settings.";
+            _statusMessage =
+                "Camera permission denied. Please enable camera access in settings.";
           });
           return;
         }
@@ -96,7 +105,8 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
       });
 
       // Debug: Print which camera is being used
-      print('📷 Using camera: ${frontCamera.name} (${frontCamera.lensDirection})');
+      print(
+          '📷 Using camera: ${frontCamera.name} (${frontCamera.lensDirection})');
     } catch (e) {
       setState(() {
         _statusMessage = "Error initializing camera: $e";
@@ -114,6 +124,9 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
       _statusMessage = "Authenticating face...";
     });
 
+    // Measure the full verification cycle (from button tap to decision)
+    final stopwatch = Stopwatch()..start();
+
     try {
       // Capture image from camera
       XFile image = await _cameraController!.takePicture();
@@ -126,25 +139,41 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
       });
 
       // Find best match from stored embeddings (registration numbers)
-      String? matchedRegNumber = await FaceAuthService.findBestMatch(imageBytes, widget.storedEmbeddings);
+      String? matchedRegNumber = await FaceAuthService.findBestMatch(
+          imageBytes, widget.storedEmbeddings);
+
+      // Stop the timer as soon as we have a verification result
+      stopwatch.stop();
+      final verificationTimeSeconds =
+          stopwatch.elapsedMilliseconds / 1000.0;
 
       if (matchedRegNumber != null) {
+        // Successful match – log using the matched registration number
+        await _logVerificationTime(
+            matchedRegNumber, verificationTimeSeconds);
+
         setState(() {
-          _authenticatedUser = matchedRegNumber;
           _statusMessage = "Authentication successful!";
         });
 
-        print('✅ Face authentication successful for registration number: $matchedRegNumber');
+        print(
+            '✅ Face authentication successful for registration number: $matchedRegNumber in ${verificationTimeSeconds.toStringAsFixed(3)}s');
 
         // Show success and call onSuccess callback
         _showSuccessAndClose(matchedRegNumber);
       } else {
+        // Failed match – log using the expected (entered) registration number
+        await _logVerificationTime(
+            widget.expectedRegNumber, verificationTimeSeconds);
+
         setState(() {
           _statusMessage = "Face not recognized. Please try again.";
         });
-        print('❌ Face authentication failed - no match found');
+        print(
+            '❌ Face authentication failed - no match found (time: ${verificationTimeSeconds.toStringAsFixed(3)}s)');
       }
     } catch (e) {
+      stopwatch.stop();
       setState(() {
         _statusMessage = "Error processing face: $e";
       });
@@ -152,6 +181,76 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
       setState(() {
         _isProcessing = false;
       });
+    }
+  }
+
+  /// Append a single verification cycle to logs.csv as:
+  /// Registration Number,Timestamp,Face Verification Time (Seconds)
+  Future<void> _logVerificationTime(
+      String registrationNumber, double timeInSeconds) async {
+    try {
+      // 1) Send to backend so it lands in project-root logs.csv
+      try {
+        final resp = await http
+            .post(
+              Uri.parse('${Config.serverUrl}/log_face_verification'),
+              headers: {'Content-Type': 'application/json'},
+              body: json.encode({
+                'registrationNumber': registrationNumber,
+                'timestamp': DateTime.now().toIso8601String(),
+                'timeSeconds': timeInSeconds,
+              }),
+            )
+            .timeout(const Duration(seconds: 5));
+        if (resp.statusCode == 200) {
+          print('✅ Server log saved to project logs.csv');
+        } else {
+          print(
+              '⚠️ Server log failed: HTTP ${resp.statusCode} ${resp.body}');
+        }
+      } catch (e) {
+        print('⚠️ Failed to send log to server: $e');
+      }
+
+      // 2) Also write locally (useful for offline debugging)
+      File file;
+      
+      // Try to write to project root first (for desktop/web)
+      try {
+        file = File('logs.csv');
+        // Test if we can write to this location
+        if (!await file.exists()) {
+          await file.writeAsString(
+            'Registration Number,Timestamp,Face Verification Time (Seconds)\n',
+            mode: FileMode.write,
+          );
+        }
+      } catch (e) {
+        // If that fails, use application documents directory (for mobile)
+        print('⚠️ Could not write to project root, using app directory: $e');
+        final directory = await getApplicationDocumentsDirectory();
+        file = File('${directory.path}/logs.csv');
+      }
+
+      // Ensure the file exists with the correct header
+      if (!await file.exists()) {
+        await file.writeAsString(
+          'Registration Number,Timestamp,Face Verification Time (Seconds)\n',
+          mode: FileMode.write,
+        );
+      }
+
+      final timestamp = DateTime.now().toIso8601String();
+      final line =
+          '$registrationNumber,$timestamp,${timeInSeconds.toStringAsFixed(3)}\n';
+
+      await file.writeAsString(line, mode: FileMode.append);
+      print('✅ Logged verification time to: ${file.absolute.path}');
+      print('   Registration: $registrationNumber, Time: ${timeInSeconds.toStringAsFixed(3)}s');
+    } catch (e, stackTrace) {
+      // Logging failures should not break the user flow, but log the error
+      print('⚠️ Error logging face verification time: $e');
+      print('⚠️ Stack trace: $stackTrace');
     }
   }
 
@@ -164,7 +263,7 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
         duration: Duration(seconds: 1),
       ),
     );
-    
+
     // Close modal and return registration number
     widget.onSuccess(registrationNumber);
   }
@@ -283,9 +382,8 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
                 Text(
                   _statusMessage,
                   style: TextStyle(
-                    color: _isProcessing
-                        ? Color(0xFF10b981)
-                        : Color(0xFF9ca3af),
+                    color:
+                        _isProcessing ? Color(0xFF10b981) : Color(0xFF9ca3af),
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
                   ),
@@ -353,8 +451,8 @@ class _FaceVerificationModalState extends State<FaceVerificationModal> {
                                 height: 16,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor:
-                                      AlwaysStoppedAnimation<Color>(Colors.white),
+                                  valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white),
                                 ),
                               ),
                               SizedBox(width: 8),

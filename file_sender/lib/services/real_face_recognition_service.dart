@@ -12,7 +12,8 @@ import 'dart:math';
 import 'performance_metrics_service.dart';
 
 class RealFaceRecognitionService {
-  static final RealFaceRecognitionService _instance = RealFaceRecognitionService._internal();
+  static final RealFaceRecognitionService _instance =
+      RealFaceRecognitionService._internal();
   factory RealFaceRecognitionService() => _instance;
   RealFaceRecognitionService._internal();
 
@@ -24,15 +25,18 @@ class RealFaceRecognitionService {
 
   // Face recognition parameters
   static const int _inputSize = 112; // Standard face recognition input size
-  static const int _embeddingSize = 64; // Using 64-bit hash for face recognition
-  static const double _faceThreshold = 0.70; // Similarity threshold for hash-based recognition
+  static const int _embeddingSize =
+      64; // Using 64-bit hash for face recognition
+  static const double _faceThreshold =
+      0.70; // Similarity threshold for hash-based recognition
 
   Future<void> initialize() async {
     if (_isInitialized) return;
 
     try {
       // Initialize face recognition service
-      _logger.i('Initializing face recognition service with image processing...');
+      _logger
+          .i('Initializing face recognition service with image processing...');
 
       // Get device identifier
       await _getDeviceIdentifier();
@@ -66,7 +70,8 @@ class RealFaceRecognitionService {
     }
   }
 
-  Future<List<double>?> extractFaceEmbeddingFromCameraImage(CameraImage cameraImage) async {
+  Future<List<double>?> extractFaceEmbeddingFromCameraImage(
+      CameraImage cameraImage) async {
     try {
       _logger.i('Extracting face embedding from camera image');
 
@@ -118,7 +123,8 @@ class RealFaceRecognitionService {
       final timeInSeconds = stopwatch.elapsedMilliseconds / 1000.0;
       await _metricsService.recordEmbeddingTime(timeInSeconds);
 
-      _logger.i('Face embedding extracted successfully from file (${timeInSeconds.toStringAsFixed(3)}s)');
+      _logger.i(
+          'Face embedding extracted successfully from file (${timeInSeconds.toStringAsFixed(3)}s)');
       return embedding;
     } catch (e) {
       _logger.e('Error extracting face embedding from file: $e');
@@ -141,7 +147,8 @@ class RealFaceRecognitionService {
           final yIndex = y * width + x;
           final yValue = yPlane[yIndex];
           // Create grayscale color as integer (0xFFRRGGBB)
-          final colorValue = (0xFF << 24) | (yValue << 16) | (yValue << 8) | yValue;
+          final colorValue =
+              (0xFF << 24) | (yValue << 16) | (yValue << 8) | yValue;
           image.setPixel(x, y, colorValue);
         }
       }
@@ -156,7 +163,8 @@ class RealFaceRecognitionService {
   Future<List<double>?> _extractFaceEmbedding(img.Image image) async {
     try {
       // Resize to standard input size
-      final resized = img.copyResize(image, width: _inputSize, height: _inputSize);
+      final resized =
+          img.copyResize(image, width: _inputSize, height: _inputSize);
 
       // Extract face features using image processing
       final faceFeatures = _extractFaceFeatures(resized);
@@ -225,7 +233,8 @@ class RealFaceRecognitionService {
     return embedding;
   }
 
-  double calculateCosineSimilarity(List<double> embedding1, List<double> embedding2) {
+  double calculateCosineSimilarity(
+      List<double> embedding1, List<double> embedding2) {
     if (embedding1.length != embedding2.length) {
       throw ArgumentError('Embeddings must have the same length');
     }
@@ -245,26 +254,31 @@ class RealFaceRecognitionService {
     return dotProduct / (sqrt(norm1) * sqrt(norm2));
   }
 
-  Future<bool> verifyFace(List<double> currentEmbedding, List<double> storedEmbedding) async {
+  Future<bool> verifyFace(
+      List<double> currentEmbedding, List<double> storedEmbedding) async {
     final stopwatch = Stopwatch()..start();
     try {
       if (currentEmbedding.length != storedEmbedding.length) {
-        _logger.e('Embedding size mismatch: ${currentEmbedding.length} vs ${storedEmbedding.length}');
+        _logger.e(
+            'Embedding size mismatch: ${currentEmbedding.length} vs ${storedEmbedding.length}');
         stopwatch.stop();
         return false;
       }
 
-      final similarity = calculateCosineSimilarity(currentEmbedding, storedEmbedding);
+      final similarity =
+          calculateCosineSimilarity(currentEmbedding, storedEmbedding);
       _logger.d('Face similarity: $similarity (threshold: $_faceThreshold)');
 
       final isVerified = similarity >= _faceThreshold;
       stopwatch.stop();
       final timeInSeconds = stopwatch.elapsedMilliseconds / 1000.0;
-      
+
       await _metricsService.recordVerificationTime(timeInSeconds);
-      
+
       if (!isVerified) {
-        await _metricsService.recordFraudAttempt(reason: 'Similarity ${similarity.toStringAsFixed(3)} below threshold ${_faceThreshold}');
+        await _metricsService.recordFraudAttempt(
+            reason:
+                'Similarity ${similarity.toStringAsFixed(3)} below threshold $_faceThreshold');
       }
 
       return isVerified;
@@ -286,7 +300,8 @@ class RealFaceRecognitionService {
       await prefs.setString('userRegNo', registrationNumber);
       await prefs.setString('userName', name);
       if (_deviceId != null) await prefs.setString('deviceId', _deviceId!);
-      await prefs.setStringList('faceEmbedding', faceEmbedding.map((e) => e.toString()).toList());
+      await prefs.setStringList(
+          'faceEmbedding', faceEmbedding.map((e) => e.toString()).toList());
 
       _logger.i('User registered locally: $registrationNumber');
 
@@ -304,7 +319,8 @@ class RealFaceRecognitionService {
         });
         _logger.i('User saved to Firestore: $registrationNumber');
       } catch (e) {
-        _logger.w('Failed to save user to Firestore (continuing local only): $e');
+        _logger
+            .w('Failed to save user to Firestore (continuing local only): $e');
       }
     } catch (e) {
       _logger.e('Error registering user: $e');
@@ -312,7 +328,8 @@ class RealFaceRecognitionService {
     }
   }
 
-  Future<Map<String, dynamic>?> authenticateUser(String registrationNumber) async {
+  Future<Map<String, dynamic>?> authenticateUser(
+      String registrationNumber) async {
     try {
       // Try local storage first (offline)
       final prefs = await SharedPreferences.getInstance();
@@ -322,7 +339,8 @@ class RealFaceRecognitionService {
       if (localRegNo == registrationNumber && localDeviceId == _deviceId) {
         final localEmbeddingList = prefs.getStringList('faceEmbedding');
         if (localEmbeddingList != null && localEmbeddingList.isNotEmpty) {
-          final localEmbedding = localEmbeddingList.map((e) => double.tryParse(e) ?? 0.0).toList();
+          final localEmbedding =
+              localEmbeddingList.map((e) => double.tryParse(e) ?? 0.0).toList();
           return {
             'name': prefs.getString('userName'),
             'registrationNumber': registrationNumber,
@@ -333,7 +351,8 @@ class RealFaceRecognitionService {
       }
 
       // Try Firestore (online)
-      final doc = await _firestore.collection('users').doc(registrationNumber).get();
+      final doc =
+          await _firestore.collection('users').doc(registrationNumber).get();
       if (doc.exists) {
         final data = doc.data() as Map<String, dynamic>;
 
@@ -342,11 +361,13 @@ class RealFaceRecognitionService {
           // Update local cache
           await prefs.setString('userRegNo', registrationNumber);
           await prefs.setString('userName', data['name'] ?? '');
-          if (data['deviceId'] != null) await prefs.setString('deviceId', data['deviceId']);
+          if (data['deviceId'] != null)
+            await prefs.setString('deviceId', data['deviceId']);
 
           if (data['faceEmbedding'] != null) {
             final embeddingList = List<dynamic>.from(data['faceEmbedding']);
-            await prefs.setStringList('faceEmbedding', embeddingList.map((e) => e.toString()).toList());
+            await prefs.setStringList('faceEmbedding',
+                embeddingList.map((e) => e.toString()).toList());
           }
 
           return {

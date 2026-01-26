@@ -12,6 +12,7 @@ import 'package:file_sender/services/shared_preferences_debug_service.dart';
 printDebugInfo() async {
   await SharedPreferencesDebugService.printDebugInfo();
 }
+
 class UserScreen extends StatefulWidget {
   const UserScreen({super.key});
 
@@ -30,7 +31,7 @@ class _UserScreenState extends State<UserScreen>
   bool _userFound = false;
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
-  
+
   // Debug panel state
   bool _showDebugPanel = false;
   Map<String, dynamic>? _debugUserData;
@@ -48,12 +49,14 @@ class _UserScreenState extends State<UserScreen>
         Tween<double>(begin: 0.0, end: 1.0).animate(_animationController);
     _loadDebugInfo();
   }
-  
+
   Future<void> _loadDebugInfo() async {
     setState(() => _debugLoading = true);
     try {
-      final userData = await SharedPreferencesDebugService.getUserRegistrationData();
-      final embeddingStats = await SharedPreferencesDebugService.getEmbeddingStats();
+      final userData =
+          await SharedPreferencesDebugService.getUserRegistrationData();
+      final embeddingStats =
+          await SharedPreferencesDebugService.getEmbeddingStats();
       setState(() {
         _debugUserData = userData;
         _debugEmbeddingStats = embeddingStats;
@@ -64,7 +67,7 @@ class _UserScreenState extends State<UserScreen>
       setState(() => _debugLoading = false);
     }
   }
-  
+
   Future<void> _clearAllData() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -73,7 +76,8 @@ class _UserScreenState extends State<UserScreen>
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
         title: Text(
           'Clear All Data?',
-          style: TextStyle(color: Color(0xFFef4444), fontWeight: FontWeight.bold),
+          style:
+              TextStyle(color: Color(0xFFef4444), fontWeight: FontWeight.bold),
         ),
         content: Text(
           'This will delete all stored user data and embeddings. This is only for testing.',
@@ -92,7 +96,7 @@ class _UserScreenState extends State<UserScreen>
         ],
       ),
     );
-    
+
     if (confirm == true) {
       await SharedPreferencesDebugService.clearAllPreferences();
       await _loadDebugInfo();
@@ -186,7 +190,10 @@ class _UserScreenState extends State<UserScreen>
       }
 
       // Show face verification in a modal dialog
-      final result = await _showFaceVerificationDialog(embeddingsByRegNumber);
+      final result = await _showFaceVerificationDialog(
+        embeddingsByRegNumber,
+        uniqueId,
+      );
 
       if (result != null) {
         // Face verification successful, check if the matched registration number matches the entered one
@@ -365,7 +372,7 @@ class _UserScreenState extends State<UserScreen>
   }
 
   Future<String?> _showFaceVerificationDialog(
-      Map<String, List<double>> storedEmbeddings) async {
+      Map<String, List<double>> storedEmbeddings, String expectedRegNumber) async {
     return await showDialog<String>(
       context: context,
       barrierDismissible: false,
@@ -387,6 +394,7 @@ class _UserScreenState extends State<UserScreen>
           ),
           child: FaceVerificationModal(
             storedEmbeddings: storedEmbeddings,
+            expectedRegNumber: expectedRegNumber,
             onSuccess: (userId) {
               Navigator.pop(context, userId);
             },
@@ -907,7 +915,8 @@ class _UserScreenState extends State<UserScreen>
                     children: [
                       // Debug header (clickable)
                       GestureDetector(
-                        onTap: () => setState(() => _showDebugPanel = !_showDebugPanel),
+                        onTap: () =>
+                            setState(() => _showDebugPanel = !_showDebugPanel),
                         child: Container(
                           padding: EdgeInsets.all(16),
                           decoration: BoxDecoration(
@@ -922,7 +931,8 @@ class _UserScreenState extends State<UserScreen>
                             children: [
                               Row(
                                 children: [
-                                  Icon(Icons.info_outline, color: Color(0xFF818cf8), size: 20),
+                                  Icon(Icons.info_outline,
+                                      color: Color(0xFF818cf8), size: 20),
                                   SizedBox(width: 12),
                                   Text(
                                     'Debug Panel',
@@ -935,14 +945,16 @@ class _UserScreenState extends State<UserScreen>
                                 ],
                               ),
                               Icon(
-                                _showDebugPanel ? Icons.expand_less : Icons.expand_more,
+                                _showDebugPanel
+                                    ? Icons.expand_less
+                                    : Icons.expand_more,
                                 color: Color(0xFF818cf8),
                               ),
                             ],
                           ),
                         ),
                       ),
-                      
+
                       // Debug content (expandable)
                       if (_showDebugPanel)
                         Container(
@@ -968,20 +980,31 @@ class _UserScreenState extends State<UserScreen>
                               ),
                               SizedBox(height: 8),
                               if (_debugUserData != null) ...[
-                                _debugInfoRow('Name', _debugUserData!['name']?.toString() ?? '—'),
-                                _debugInfoRow('Reg No', _debugUserData!['registrationNumber']?.toString() ?? '—'),
-                                _debugInfoRow('Device ID', (_debugUserData!['deviceId']?.toString() ?? '—').substring(0, 20) + '...'),
-                                _debugInfoRow('Embedding Stored', _debugUserData!['hasEmbedding'] == true ? '✅ Yes' : '❌ No'),
+                                _debugInfoRow('Name',
+                                    _debugUserData!['name']?.toString() ?? '—'),
+                                _debugInfoRow(
+                                    'Reg No',
+                                    _debugUserData!['registrationNumber']
+                                            ?.toString() ??
+                                        '—'),
+                                _debugInfoRow('Device ID',
+                                    '${(_debugUserData!['deviceId']?.toString() ?? '—').substring(0, 20)}...'),
+                                _debugInfoRow(
+                                    'Embedding Stored',
+                                    _debugUserData!['hasEmbedding'] == true
+                                        ? '✅ Yes'
+                                        : '❌ No'),
                               ] else
                                 Text(
                                   'No user data found',
-                                  style: TextStyle(color: Color(0xFF9ca3af), fontSize: 12),
+                                  style: TextStyle(
+                                      color: Color(0xFF9ca3af), fontSize: 12),
                                 ),
-                              
+
                               SizedBox(height: 16),
                               Divider(color: Color(0xFF374151)),
                               SizedBox(height: 16),
-                              
+
                               // Embedding Stats Section
                               Text(
                                 '🧠 Embedding Statistics:',
@@ -993,22 +1016,44 @@ class _UserScreenState extends State<UserScreen>
                               ),
                               SizedBox(height: 8),
                               if (_debugEmbeddingStats != null) ...[
-                                _debugInfoRow('Size', _debugEmbeddingStats!['embeddingSize']?.toString() ?? '—'),
-                                _debugInfoRow('Mean', (_debugEmbeddingStats!['mean'] as double?)?.toStringAsFixed(4) ?? '—'),
-                                _debugInfoRow('Std Dev', (_debugEmbeddingStats!['stdDev'] as double?)?.toStringAsFixed(4) ?? '—'),
-                                _debugInfoRow('Min', (_debugEmbeddingStats!['min'] as double?)?.toStringAsFixed(4) ?? '—'),
-                                _debugInfoRow('Max', (_debugEmbeddingStats!['max'] as double?)?.toStringAsFixed(4) ?? '—'),
+                                _debugInfoRow(
+                                    'Size',
+                                    _debugEmbeddingStats!['embeddingSize']
+                                            ?.toString() ??
+                                        '—'),
+                                _debugInfoRow(
+                                    'Mean',
+                                    (_debugEmbeddingStats!['mean'] as double?)
+                                            ?.toStringAsFixed(4) ??
+                                        '—'),
+                                _debugInfoRow(
+                                    'Std Dev',
+                                    (_debugEmbeddingStats!['stdDev'] as double?)
+                                            ?.toStringAsFixed(4) ??
+                                        '—'),
+                                _debugInfoRow(
+                                    'Min',
+                                    (_debugEmbeddingStats!['min'] as double?)
+                                            ?.toStringAsFixed(4) ??
+                                        '—'),
+                                _debugInfoRow(
+                                    'Max',
+                                    (_debugEmbeddingStats!['max'] as double?)
+                                            ?.toStringAsFixed(4) ??
+                                        '—'),
                               ] else
                                 Text(
                                   'No embedding data found',
-                                  style: TextStyle(color: Color(0xFF9ca3af), fontSize: 12),
+                                  style: TextStyle(
+                                      color: Color(0xFF9ca3af), fontSize: 12),
                                 ),
-                              
+
                               SizedBox(height: 16),
-                              
+
                               // Action buttons
                               Row(
-                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                mainAxisAlignment:
+                                    MainAxisAlignment.spaceBetween,
                                 children: [
                                   ElevatedButton.icon(
                                     icon: Icon(Icons.refresh, size: 16),
@@ -1016,7 +1061,8 @@ class _UserScreenState extends State<UserScreen>
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Color(0xFF818cf8),
                                       foregroundColor: Colors.white,
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
                                       visualDensity: VisualDensity.compact,
                                     ),
                                     onPressed: _loadDebugInfo,
@@ -1027,7 +1073,8 @@ class _UserScreenState extends State<UserScreen>
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Color(0xFFef4444),
                                       foregroundColor: Colors.white,
-                                      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                      padding: EdgeInsets.symmetric(
+                                          horizontal: 12, vertical: 8),
                                       visualDensity: VisualDensity.compact,
                                     ),
                                     onPressed: _clearAllData,

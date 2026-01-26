@@ -5,18 +5,20 @@ import 'package:logger/logger.dart';
 import '../services/real_face_recognition_service.dart';
 
 class SignupScreen extends StatefulWidget {
-  const SignupScreen({Key? key}) : super(key: key);
+  const SignupScreen({super.key});
 
   @override
   _SignupScreenState createState() => _SignupScreenState();
 }
 
-class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver {
+class _SignupScreenState extends State<SignupScreen>
+    with WidgetsBindingObserver {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _regNoController = TextEditingController();
   final Logger _logger = Logger();
-  final RealFaceRecognitionService _faceAuthService = RealFaceRecognitionService();
+  final RealFaceRecognitionService _faceAuthService =
+      RealFaceRecognitionService();
 
   CameraController? _cameraController;
   List<CameraDescription>? _cameras;
@@ -63,7 +65,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
       _logger.i('Real face recognition service initialized');
     } catch (e) {
       _logger.e('Error initializing real face recognition service: $e');
-      _showErrorDialog('Initialization Error', 'Failed to initialize real face recognition service');
+      _showErrorDialog('Initialization Error',
+          'Failed to initialize real face recognition service');
     }
   }
 
@@ -72,7 +75,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
       // Request camera permission
       final cameraPermission = await Permission.camera.request();
       if (!cameraPermission.isGranted) {
-        _showErrorDialog('Permission Required', 'Camera permission is required for face registration');
+        _showErrorDialog('Permission Required',
+            'Camera permission is required for face registration');
         return;
       }
 
@@ -129,12 +133,14 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
       final xFile = XFile(image.path);
 
       // Extract real face embedding using TFLite
-      final embedding = await _faceAuthService.extractFaceEmbeddingFromFile(xFile.path);
+      final embedding =
+          await _faceAuthService.extractFaceEmbeddingFromFile(xFile.path);
 
       if (embedding == null) {
         setState(() {
           _isProcessing = false;
-          _errorMessage = 'No face detected or failed to extract face embedding. Please try again.';
+          _errorMessage =
+              'No face detected or failed to extract face embedding. Please try again.';
         });
         _logger.w('Failed to extract face embedding');
         return;
@@ -146,7 +152,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
         _isProcessing = false;
       });
 
-      _logger.i('Real face embedding extracted successfully (${embedding.length} dimensions)');
+      _logger.i(
+          'Real face embedding extracted successfully (${embedding.length} dimensions)');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text('Face registered successfully!'),
@@ -163,7 +170,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
   }
 
   Future<void> _registerUser() async {
-    if (_formKey.currentState?.validate() != true || _capturedEmbedding == null) {
+    if (_formKey.currentState?.validate() != true ||
+        _capturedEmbedding == null) {
       return;
     }
 
@@ -255,7 +263,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
           ElevatedButton(
             onPressed: () {
               Navigator.pop(context); // Close dialog
-              Navigator.pushReplacementNamed(context, '/user'); // Navigate to user screen
+              Navigator.pushReplacementNamed(
+                  context, '/user'); // Navigate to user screen
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.green,
@@ -360,7 +369,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
                 children: [
                   Icon(Icons.check_circle, color: Colors.green),
                   SizedBox(width: 8),
-                  Text('Face captured successfully', style: TextStyle(color: Colors.green)),
+                  Text('Face captured successfully',
+                      style: TextStyle(color: Colors.green)),
                 ],
               ),
             SizedBox(height: 16),
@@ -403,7 +413,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
                   children: [
                     Text(
                       'Registration Details',
-                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      style:
+                          TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                     ),
                     SizedBox(height: 8),
                     Row(
@@ -426,7 +437,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
                       children: [
                         Icon(Icons.face, size: 20),
                         SizedBox(width: 8),
-                        Text('Face: ${_faceDetected ? 'Registered' : 'Not registered'}'),
+                        Text(
+                            'Face: ${_faceDetected ? 'Registered' : 'Not registered'}'),
                       ],
                     ),
                   ],
@@ -455,8 +467,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
         ),
         isActive: _currentStep >= 2,
       ),
-      ];
-    }
+    ];
+  }
 
   void _nextStep() {
     if (_currentStep < _getSteps().length - 1) {
@@ -519,7 +531,8 @@ class _SignupScreenState extends State<SignupScreen> with WidgetsBindingObserver
                         Spacer(),
                         if (_currentStep < _getSteps().length - 1)
                           ElevatedButton(
-                            onPressed: _currentStep == 0 && (_formKey.currentState?.validate() != true)
+                            onPressed: _currentStep == 0 &&
+                                    (_formKey.currentState?.validate() != true)
                                 ? null
                                 : details.onStepContinue,
                             child: Text('Next'),
