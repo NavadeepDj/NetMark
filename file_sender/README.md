@@ -82,8 +82,6 @@ NetMark is a comprehensive attendance management system designed for educational
 
 ---
 
----
-
 ## 📁 Repository Layout
 
 ```
