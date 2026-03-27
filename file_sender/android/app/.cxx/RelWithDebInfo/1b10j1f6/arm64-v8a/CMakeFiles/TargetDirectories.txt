@@ -1,0 +1,2 @@
+D:/NetMark/file_sender/android/app/.cxx/RelWithDebInfo/1b10j1f6/arm64-v8a/CMakeFiles/edit_cache.dir
+D:/NetMark/file_sender/android/app/.cxx/RelWithDebInfo/1b10j1f6/arm64-v8a/CMakeFiles/rebuild_cache.dir

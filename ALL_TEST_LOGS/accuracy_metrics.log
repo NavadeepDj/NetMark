@@ -1,0 +1,22 @@
+Face Verification Attempt Metrics
+=================================
+
+Metric                      Total Attempts    Correct
+-----------------------------------------------------
+Correct subnet validations  750               748
+True face verifications     750               730
+False positives             750               9
+False negatives             750               15
+
+
+Derived Accuracy Metrics
+========================
+
+Metric                      Value
+-----------------------------------------
+Subnet validation accuracy  99.7%
+Face verification accuracy  97.3%
+Overall system accuracy     98.8%
+False positive rate         1.2%
+False negative rate         2.0%
+

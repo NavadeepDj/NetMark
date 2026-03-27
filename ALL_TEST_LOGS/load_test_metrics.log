@@ -1,0 +1,14 @@
+Load / Stress Test Metrics
+==========================
+
+Concurrent Users   Total Requests   Success Rate   Throughput (req/s)   Status
+------------------------------------------------------------------------------
+5                  50               100%          67                    Optimal
+10                 100              100%          104                   Optimal
+20                 200              100%          152                   Good
+50                 500              100%          154                   Acceptable
+100                500              100%          167                   Functional
+150                750              100%          160                   Functional
+200                1000             98.4%         164                   Breaking Point
+250                1250             94.6%         190                   Failure
+

@@ -1,0 +1,21 @@
+Timing Metrics - Attendance Marking
+===================================
+
+Metric                         Time (seconds)
+--------------------------------------------
+Subnet validation time         0.8
+Face verification time         2.1
+Database update time           0.3
+Total avg attendance time      3.2
+
+
+On-Device Authentication Metrics
+================================
+
+Metric                          Value
+----------------------------------------------
+Mediapipe Face Detection        < 0.5 s per frame
+MobileFaceNet Embedding         < 1 s on modern mobile devices
+Total Authentication Cycle      < 2 s (practically instant)
+Works Offline                   All steps stay on-device
+

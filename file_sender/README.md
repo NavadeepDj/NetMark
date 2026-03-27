@@ -80,6 +80,13 @@ NetMark is a comprehensive attendance management system designed for educational
 - [📄 Runtime Data Files](#-runtime-data-files) - CSV file formats and usage
 - [📝 logs.csv](#-logscsv) - Face verification performance logs
 - [✅ verified_ids.csv](#-verified_idscsv) - Attendance records
+- [📁 stress_test_logs/](#-stress-test-logs-directory) - Stress testing execution logs
+
+### 🧪 Testing & Code
+- [🧪 Testing & Stress Testing](#-testing--stress-testing) - Complete testing documentation
+- [📁 stress_test_logs/](#-stress-test-logs-directory) - Test execution logs directory
+- [🔧 Testing Scripts](#-testing-scripts) - load_test.py, find_breaking_point.py
+- [🚨 Breaking Point Analysis](#-breaking-point-analysis) - System limits and failure points
 
 ---
 
@@ -133,13 +140,24 @@ FAST_Attendance/
 │   ├── 📂 assets/               # Images, models, icons
 │   └── 📂 android/ios/web/      # Platform-specific code
 │
-├── 🐍 Server_regNoSend.py       # Main Flask server
-├── 🐍 server.py                 # Minimal Flask example (not used)
+├── 🐍 [Server_regNoSend.py](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py)       # Main Flask server
+├── 🐍 [server.py](https://github.com/Sujith8257/NetMark/blob/main/server.py)                 # Minimal Flask example (not used)
+│
+├── 🧪 Testing Scripts
+│   ├── [load_test.py](https://github.com/Sujith8257/NetMark/blob/main/load_test.py)             # Load testing script
+│   ├── [find_breaking_point.py](https://github.com/Sujith8257/NetMark/blob/main/find_breaking_point.py)   # Breaking point analysis script
+│   ├── [run_stress_tests.ps1](https://github.com/Sujith8257/NetMark/blob/main/run_stress_tests.ps1)     # Automated test suite (Windows)
+│   └── [run_stress_tests.sh](https://github.com/Sujith8257/NetMark/blob/main/run_stress_tests.sh)      # Automated test suite (Linux/macOS)
 │
 └── 📄 Runtime-generated files (local backup/offline storage)
-    ├── user_data.csv            # Uploaded class list
-    ├── verified_ids.csv         # Attendance records
-    └── ip_tracking.csv          # IP tracking for duplicate prevention
+    ├── [user_data.csv](https://github.com/Sujith8257/NetMark/blob/main/user_data.csv)            # Uploaded class list
+    ├── [verified_ids.csv](https://github.com/Sujith8257/NetMark/blob/main/verified_ids.csv)         # Attendance records
+    ├── [ip_tracking.csv](https://github.com/Sujith8257/NetMark/blob/main/ip_tracking.csv)          # IP tracking for duplicate prevention
+    ├── [logs.csv](https://github.com/Sujith8257/NetMark/blob/main/logs.csv)                 # Face verification performance logs
+    ├── [scalability_metrics.csv](https://github.com/Sujith8257/NetMark/blob/main/scalability_metrics.csv) # Server-side scalability metrics
+    ├── [breaking_point_results.json](https://github.com/Sujith8257/NetMark/blob/main/breaking_point_results.json) # Breaking point test results
+    └── 📁 [stress_test_logs/](https://github.com/Sujith8257/NetMark/tree/main/stress_test_logs)     # Stress testing execution logs
+        └── load_test_*users_*.log # Timestamped test logs
 ```
 
 ### 📋 Runtime-Generated Files
@@ -148,10 +166,13 @@ These CSV files are created at runtime as **local backups** for offline operatio
 
 | File | Purpose | Format |
 |------|---------|--------|
-| `user_data.csv` | Latest uploaded class list (backed up locally) | `Registration Number`, `Name`, `Slot 4`, `Section`, `FA` |
-| `verified_ids.csv` | Attendance records (present students + timestamps) | `Registration Number`, `Timestamp`, `IP` |
-| `ip_tracking.csv` | IP tracking for duplicate prevention | `IP`, `Timestamp` |
-| `logs.csv` | Face verification performance logs | `Registration Number`, `Timestamp`, `Face Verification Time (Seconds)` |
+| [`user_data.csv`](https://github.com/Sujith8257/NetMark/blob/main/user_data.csv) | Latest uploaded class list (backed up locally) | `Registration Number`, `Name`, `Slot 4`, `Section`, `FA` |
+| [`verified_ids.csv`](https://github.com/Sujith8257/NetMark/blob/main/verified_ids.csv) | Attendance records (present students + timestamps) | `Registration Number`, `Timestamp`, `IP` |
+| [`ip_tracking.csv`](https://github.com/Sujith8257/NetMark/blob/main/ip_tracking.csv) | IP tracking for duplicate prevention | `IP`, `Timestamp` |
+| [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv) | Face verification performance logs | `Registration Number`, `Timestamp`, `Face Verification Time (Seconds)` |
+| [`scalability_metrics.csv`](https://github.com/Sujith8257/NetMark/blob/main/scalability_metrics.csv) | Server-side scalability metrics (accumulated) | `Timestamp`, `Endpoint`, `Concurrent Users`, `Response Times`, `Throughput`, etc. |
+| [`breaking_point_results.json`](https://github.com/Sujith8257/NetMark/blob/main/breaking_point_results.json) | Breaking point test results | JSON with test configuration and results for each load level |
+| [`stress_test_logs/`](https://github.com/Sujith8257/NetMark/tree/main/stress_test_logs) | Directory containing all test execution logs | `load_test_{users}users_{timestamp}.log` files |
 
 > 💡 **Note**: When network connectivity is available, data automatically syncs to the cloud server.
 
@@ -163,7 +184,7 @@ This section provides a comprehensive explanation of all files in the project st
 
 ### 🔧 Backend Files
 
-#### `Server_regNoSend.py` (Main Flask Server)
+#### [`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py) (Main Flask Server)
 
 **📍 Location**: Root directory  
 **🎯 Purpose**: Main Flask backend server that handles all attendance-related operations.
@@ -178,12 +199,12 @@ This section provides a comprehensive explanation of all files in the project st
 - **📝 Face Verification Logging** (`/log_face_verification`): Records face verification cycle times for performance analysis
 
 **📂 Data Files Used**:
-- Reads from: `user_data.csv` (class list)
-- Writes to: `verified_ids.csv` (attendance records), `ip_tracking.csv` (IP tracking), `logs.csv` (face verification logs)
+- Reads from: [`user_data.csv`](https://github.com/Sujith8257/NetMark/blob/main/user_data.csv) (class list)
+- Writes to: [`verified_ids.csv`](https://github.com/Sujith8257/NetMark/blob/main/verified_ids.csv) (attendance records), [`ip_tracking.csv`](https://github.com/Sujith8257/NetMark/blob/main/ip_tracking.csv) (IP tracking), [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv) (face verification logs)
 
 **🔗 Related Sections**: [API endpoints](#-api-documentation), [Backend setup](#-backend-flask-setup)
 
-#### `server.py` (Minimal Flask Example)
+#### [`server.py`](https://github.com/Sujith8257/NetMark/blob/main/server.py) (Minimal Flask Example)
 
 **📍 Location**: Root directory  
 **🎯 Purpose**: Minimal Flask upload example server (not used by the main Flutter application flow).
@@ -196,7 +217,7 @@ This section provides a comprehensive explanation of all files in the project st
 
 #### 🎯 Core Application Files
 
-##### `file_sender/lib/main.dart`
+##### [`lib/main.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/main.dart)
 
 **🎯 Purpose**: Application entry point and main configuration.
 
@@ -217,7 +238,7 @@ This section provides a comprehensive explanation of all files in the project st
 
 **🔗 Related Sections**: [Flutter app setup](#-flutter-app-setup), [Typical workflow](#-typical-workflow)
 
-##### `file_sender/lib/config.dart`
+##### [`lib/config.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/config.dart)
 
 **🎯 Purpose**: Centralized server configuration.
 
@@ -234,11 +255,11 @@ This section provides a comprehensive explanation of all files in the project st
 
 | File | Purpose |
 |------|---------|
-| `login_page.dart` | Main login entry point |
-| `role_selection_screen.dart` | Role selection (Student/Faculty) |
-| `student_login.dart` & `faculty_login.dart` | Role-specific authentication |
-| `student_signup.dart` & `faculty_signup.dart` | User registration |
-| `signup_role_selection_screen.dart` | Role selection for registration |
+| [`login_page.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/login_page.dart) | Main login entry point |
+| [`role_selection_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/role_selection_screen.dart) | Role selection (Student/Faculty) |
+| [`student_login.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/student_login.dart) & [`faculty_login.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/faculty_login.dart) | Role-specific authentication |
+| [`student_signup.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/student_signup.dart) & [`faculty_signup.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/faculty_signup.dart) | User registration |
+| [`signup_role_selection_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/signup_role_selection_screen.dart) | Role selection for registration |
 
 ---
 
@@ -246,13 +267,13 @@ This section provides a comprehensive explanation of all files in the project st
 
 | File | Purpose | Key Features |
 |------|---------|--------------|
-| `faculty_dashboard.dart` | Faculty dashboard | Statistics, navigation, quick access |
-| `attendance_screen.dart` | Attendance marking | Registration input, face verification |
-| `class_attendance_screen.dart` | Class overview | Present/absent status for all students |
-| `student_list_screen.dart` | Student list | Filtering, search integration |
-| `upload_csv_screen.dart` | CSV upload | File picker, validation, progress |
-| `statistics_dashboard.dart` | Statistical analysis | Performance metrics, baseline comparisons, significance testing |
-| `metrics_debug_screen.dart` | Metrics viewer | Raw metrics data, export capabilities |
+| [`faculty_dashboard.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/faculty_dashboard.dart) | Faculty dashboard | Statistics, navigation, quick access |
+| [`attendance_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/attendance_screen.dart) | Attendance marking | Registration input, face verification |
+| [`class_attendance_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/class_attendance_screen.dart) | Class overview | Present/absent status for all students |
+| [`student_list_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/student_list_screen.dart) | Student list | Filtering, search integration |
+| [`upload_csv_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/upload_csv_screen.dart) | CSV upload | File picker, validation, progress |
+| [`statistics_dashboard.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/screens/statistics_dashboard.dart) | Statistical analysis | Performance metrics, baseline comparisons, significance testing |
+| [`metrics_debug_screen.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/screens/metrics_debug_screen.dart) | Metrics viewer | Raw metrics data, export capabilities |
 
 ---
 
@@ -260,9 +281,9 @@ This section provides a comprehensive explanation of all files in the project st
 
 | File | Purpose |
 |------|---------|
-| `face_login_screen.dart` | Face-based authentication |
-| `face_scan_screen.dart` | Face image capture and processing |
-| `face_verification_modal.dart` | Face verification during attendance |
+| [`face_login_screen.dart`](lib/face_login_screen.dart) | Face-based authentication |
+| [`face_scan_screen.dart`](lib/face_scan_screen.dart) | Face image capture and processing |
+| [`face_verification_modal.dart`](lib/face_verification_modal.dart) | Face verification during attendance |
 
 ---
 
@@ -270,15 +291,15 @@ This section provides a comprehensive explanation of all files in the project st
 
 | Service | Purpose |
 |---------|---------|
-| `firebase_auth_service.dart` | Firebase Authentication wrapper |
-| `firestore_service.dart` | Cloud data storage and synchronization |
-| `face_auth_service.dart` | Biometric face verification |
-| `face_registration_service.dart` | Face biometric registration |
-| `face_database_service.dart` | Local face embeddings storage |
-| `tflite_interpreter.dart` | TensorFlow Lite model interface |
-| `yolo_service.dart` | Real-time face detection |
-| `performance_metrics_service.dart` | Performance metrics collection, statistical analysis, baseline comparisons |
-| `real_face_recognition_service.dart` | Face recognition with embedding extraction and verification |
+| [`firebase_auth_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/firebase_auth_service.dart) | Firebase Authentication wrapper |
+| [`firestore_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/firestore_service.dart) | Cloud data storage and synchronization |
+| [`face_auth_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/face_auth_service.dart) | Biometric face verification |
+| [`face_registration_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/face_registration_service.dart) | Face biometric registration |
+| [`face_database_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/face_database_service.dart) | Local face embeddings storage |
+| [`tflite_interpreter.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/tflite_interpreter.dart) | TensorFlow Lite model interface |
+| [`yolo_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/yolo_service.dart) | Real-time face detection |
+| [`performance_metrics_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/performance_metrics_service.dart) | Performance metrics collection, statistical analysis, baseline comparisons |
+| [`real_face_recognition_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/real_face_recognition_service.dart) | Face recognition with embedding extraction and verification |
 
 ---
 
@@ -286,16 +307,16 @@ This section provides a comprehensive explanation of all files in the project st
 
 | File/Directory | Purpose |
 |----------------|---------|
-| `pubspec.yaml` | Flutter project configuration and dependencies |
-| `firebase_options.dart` | Auto-generated Firebase configuration |
-| `assets/models/output_model.tflite` | Pre-trained face recognition model |
-| `assets/icons/checkin.svg` | UI icon assets |
+| [`pubspec.yaml`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/pubspec.yaml) | Flutter project configuration and dependencies |
+| [`firebase_options.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/firebase_options.dart) | Auto-generated Firebase configuration |
+| [`assets/models/output_model.tflite`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/assets/models/output_model.tflite) | Pre-trained face recognition model |
+| [`assets/icons/checkin.svg`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/assets/icons/checkin.svg) | UI icon assets |
 
 ---
 
 ### 📄 Runtime Data Files
 
-#### `user_data.csv`
+#### [`user_data.csv`](https://github.com/Sujith8257/NetMark/blob/main/user_data.csv)
 
 **📍 Location**: Root directory  
 **🎯 Purpose**: Stores the uploaded class list CSV file.
@@ -307,7 +328,7 @@ This section provides a comprehensive explanation of all files in the project st
 
 ---
 
-#### `verified_ids.csv`
+#### [`verified_ids.csv`](https://github.com/Sujith8257/NetMark/blob/main/verified_ids.csv)
 
 **📍 Location**: Root directory  
 **🎯 Purpose**: Stores attendance records with timestamps and IP addresses.
@@ -325,7 +346,7 @@ Registration Number,Timestamp,IP
 
 ---
 
-#### `ip_tracking.csv`
+#### [`ip_tracking.csv`](https://github.com/Sujith8257/NetMark/blob/main/ip_tracking.csv)
 
 **📍 Location**: Root directory  
 **🎯 Purpose**: Tracks IP addresses to prevent duplicate submissions.
@@ -337,7 +358,7 @@ Registration Number,Timestamp,IP
 
 ---
 
-#### `logs.csv`
+#### [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv)
 
 **📍 Location**: Root directory  
 **🎯 Purpose**: Stores face verification performance metrics for statistical analysis.
@@ -388,8 +409,8 @@ Output: isAuthorized
 - Used for network-based access control
 
 **Code Location**: 
-- Backend validation in `Server_regNoSend.py`
-- IP tracking in `ip_tracking.csv` for duplicate prevention
+- Backend validation in [`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py)
+- IP tracking in [`ip_tracking.csv`](https://github.com/Sujith8257/NetMark/blob/main/ip_tracking.csv) for duplicate prevention
 
 ---
 
@@ -470,10 +491,10 @@ Output: isVerified
 - **Verification Result**: Returns true if face matches, false otherwise
 
 **Code Location**: 
-- `file_sender/lib/services/real_face_recognition_service.dart` - Face verification logic
-- `file_sender/lib/widgets/face_verification_camera.dart` - Camera interface
-- `file_sender/lib/face_verification_modal.dart` - Verification modal UI
-- `file_sender/lib/services/performance_metrics_service.dart` - Performance tracking
+- [`lib/services/real_face_recognition_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/real_face_recognition_service.dart) - Face verification logic
+- [`lib/widgets/face_verification_camera.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/widgets/face_verification_camera.dart) - Camera interface
+- [`lib/face_verification_modal.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/face_verification_modal.dart) - Verification modal UI
+- [`lib/services/performance_metrics_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/performance_metrics_service.dart) - Performance tracking
 
 **Key Features**:
 - ✅ Real-time face detection from camera
@@ -484,7 +505,7 @@ Output: isVerified
 
 **Performance Metrics**:
 - Verification time tracked for each cycle
-- Logged to `logs.csv` for statistical analysis
+- Logged to [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv) for statistical analysis
 - Average verification time: < 1 second (validated)
 
 ---
@@ -493,7 +514,7 @@ Output: isVerified
 
 | Algorithm | Purpose | Key Components | Code Files |
 |-----------|---------|----------------|------------|
-| **Algorithm 1** | Subnet Validation | IP validation, network access control | `Server_regNoSend.py` |
+| **Algorithm 1** | Subnet Validation | IP validation, network access control | [`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py) |
 | **Algorithm 2** | Face Sign-Up | Face detection, embedding generation, secure storage | `real_face_recognition_service.dart`, `signup_screen.dart` |
 | **Algorithm 3** | Face Login/Attendance | Live detection, similarity matching, verification | `real_face_recognition_service.dart`, `face_verification_modal.dart` |
 
@@ -501,15 +522,15 @@ Output: isVerified
 
 All algorithms are fully implemented and available in the codebase:
 
-- **Face Recognition**: `file_sender/lib/services/real_face_recognition_service.dart`
-- **Offline-First Storage**: `file_sender/lib/services/firestore_service.dart`
-- **Statistical Analysis**: `file_sender/lib/services/performance_metrics_service.dart`
-- **Face Detection**: `file_sender/lib/services/yolo_service.dart` or MediaPipe integration
-- **Embedding Generation**: MobileFaceNet model (`assets/models/output_model.tflite`)
+- **Face Recognition**: [`file_sender/lib/services/real_face_recognition_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/real_face_recognition_service.dart)
+- **Offline-First Storage**: [`file_sender/lib/services/firestore_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/firestore_service.dart)
+- **Statistical Analysis**: [`file_sender/lib/services/performance_metrics_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/performance_metrics_service.dart)
+- **Face Detection**: [`file_sender/lib/services/yolo_service.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/services/yolo_service.dart) or MediaPipe integration
+- **Embedding Generation**: MobileFaceNet model ([`assets/models/output_model.tflite`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/assets/models/output_model.tflite))
 
 ### 📊 Algorithm Performance
 
-**Face Authentication Performance** (from `logs.csv`):
+**Face Authentication Performance** (from [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv)):
 - **Average Verification Time**: ~0.75 seconds
 - **Range**: 0.69s - 0.99s
 - **Success Rate**: > 94% (with 95% CI)
@@ -599,7 +620,7 @@ flutter pub get
 
 #### Step 3: Configure Server URL
 
-Edit `file_sender/lib/config.dart`:
+Edit [`file_sender/lib/config.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/config.dart):
 
 ```dart
 static String serverUrl = 'http://YOUR_SERVER_IP:5000';
@@ -957,7 +978,7 @@ Generate comprehensive scalability report with all metrics.
 }
 ```
 
-**Note**: Report is also saved to `scalability_metrics.csv` automatically.
+**Note**: Report is also saved to [`scalability_metrics.csv`](https://github.com/Sujith8257/NetMark/blob/main/scalability_metrics.csv) automatically.
 
 ---
 
@@ -1096,7 +1117,7 @@ The dashboard displays:
 
 ### 📊 Real-World Example from logs.csv
 
-Based on actual data from `logs.csv`:
+Based on actual data from [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv):
 
 ```csv
 Registration Number,Timestamp,Face Verification Time (Seconds)
@@ -1377,13 +1398,84 @@ The following results were obtained from empirical stress testing:
    - **Recommended limit**: 20-50 concurrent users for typical classroom environments
    - **Maximum capacity**: 150-200 concurrent users for production use
 
-### 📝 Test Logs
+### 📁 Stress Test Logs Directory
+
+**Location**: `stress_test_logs/` (project root directory)
+
+All test executions are automatically logged to this directory with timestamped filenames.
+
+#### **Directory Structure**
+
+```
+stress_test_logs/
+├── load_test_5users_20260126_163902.log
+├── load_test_10users_20260126_163902.log
+├── load_test_20users_20260126_163859.log
+├── load_test_50users_20260126_163902.log
+├── load_test_100users_20260126_163902.log
+└── ... (additional test logs)
+```
+
+#### **Log File Naming Convention**
+
+Format: `load_test_{concurrent_users}users_{timestamp}.log`
+
+- `{concurrent_users}`: Number of concurrent users tested (e.g., 5, 10, 20, 50, 100)
+- `{timestamp}`: Test execution timestamp in format `YYYYMMDD_HHMMSS`
+
+**Example**: `load_test_20users_20260126_163902.log` = Test with 20 concurrent users, executed on January 26, 2026 at 16:39:02
+
+#### **Log File Contents**
+
+Each log file contains:
+- ✅ **Test configuration**: Base URL, endpoint, concurrent users, requests per user
+- ✅ **Start/end timestamps**: Test execution times
+- ✅ **Real-time progress**: Request execution updates
+- ✅ **Complete results**: Success/failure counts, response times, throughput
+- ✅ **Error details**: Connection errors, timeouts, HTTP errors
+- ✅ **Server tracking status**: Whether server-side metrics were enabled
+- ✅ **File save confirmations**: Locations of saved JSON results
+
+#### **Accessing Log Files**
+
+**Windows (PowerShell)**:
+```powershell
+# View all log files
+Get-ChildItem stress_test_logs\*.log
+
+# View latest log
+Get-ChildItem stress_test_logs\*.log | Sort-Object LastWriteTime -Descending | Select-Object -First 1 | Get-Content
+
+# View specific test log
+Get-Content stress_test_logs\load_test_20users_*.log
+```
+
+**Linux/macOS (Bash)**:
+```bash
+# View all log files
+ls -lh stress_test_logs/*.log
+
+# View latest log
+ls -t stress_test_logs/*.log | head -1 | xargs cat
+
+# View specific test log
+cat stress_test_logs/load_test_20users_*.log
+```
+
+#### **Log File Location**
+
+- **Default location**: Project root directory (`D:\NetMark\stress_test_logs\` on Windows)
+- **Auto-created**: Directory is automatically created when first test runs
+- **Persistent**: Logs are saved permanently for analysis and review
+
+### 📝 Test Logs Summary
 
 All test executions are automatically logged:
 
 - **Log files**: `stress_test_logs/load_test_{users}users_{timestamp}.log`
-- **Results**: `load_test_{users}users.json`
-- **Server metrics**: `scalability_metrics.csv` (accumulated)
+- **Results**: `load_test_{users}users.json` (project root)
+- **Server metrics**: `scalability_metrics.csv` (project root, accumulated)
+- **Breaking point results**: `breaking_point_results.json` (project root)
 
 **Example log entry**:
 ```
@@ -1405,9 +1497,33 @@ All test executions are automatically logged:
 [2026-01-26 16:39:03] ✅ Results saved to load_test_5users.json
 ```
 
-### 🛠️ Testing Tools
+### 🛠️ Testing Tools & Code
 
-#### **Load Testing Script** (`load_test.py`)
+#### **Testing Scripts Overview**
+
+The stress testing infrastructure consists of several Python scripts:
+
+| Script | Purpose | Location |
+|--------|---------|----------|
+| [`load_test.py`](https://github.com/Sujith8257/NetMark/blob/main/load_test.py) | Controlled concurrent request testing | Project root |
+| [`find_breaking_point.py`](https://github.com/Sujith8257/NetMark/blob/main/find_breaking_point.py) | Progressive load testing to identify system limits | Project root |
+| [`run_stress_tests.ps1`](https://github.com/Sujith8257/NetMark/blob/main/run_stress_tests.ps1) | Automated test suite (Windows PowerShell) | Project root |
+| [`run_stress_tests.sh`](https://github.com/Sujith8257/NetMark/blob/main/run_stress_tests.sh) | Automated test suite (Linux/macOS Bash) | Project root |
+
+#### **1. Load Testing Script** ([`load_test.py`](https://github.com/Sujith8257/NetMark/blob/main/load_test.py))
+
+**📍 Location**: Project root directory (`D:\NetMark\load_test.py`)
+
+**🎯 Purpose**: Performs controlled stress testing with configurable concurrent requests.
+
+**Key Features**:
+- ✅ Controlled concurrent request generation
+- ✅ Configurable users and requests per user
+- ✅ Response time statistics (mean, median, P95, P99)
+- ✅ Error tracking (timeouts, connection errors, HTTP errors)
+- ✅ JSON report generation
+- ✅ Automatic log file creation
+- ✅ Integration with server-side tracking
 
 **Usage**:
 ```bash
@@ -1430,7 +1546,122 @@ python load_test.py \
 - `--delay`: Delay between requests in seconds (default: 0.1)
 - `--server-tracking`: Enable server-side metrics collection
 - `--output`: Output JSON file (default: load_test_results.json)
-- `--log-file`: Log file path (auto-generated if not specified)
+- `--log-file`: Log file path (auto-generated if not specified, saved to `stress_test_logs/`)
+
+**Output Files**:
+- JSON results: `load_test_{users}users.json` (project root)
+- Log file: `stress_test_logs/load_test_{users}users_{timestamp}.log`
+
+**Code Structure**:
+```python
+class LoadTester:
+    - make_request(): Single HTTP request with timing
+    - run_test(): Execute load test with concurrent users
+    - print_report(): Display formatted results
+    - save_report(): Save JSON results
+    - save_logs(): Save console output to log file
+```
+
+#### **2. Breaking Point Finder** ([`find_breaking_point.py`](https://github.com/Sujith8257/NetMark/blob/main/find_breaking_point.py))
+
+**📍 Location**: Project root directory (`D:\NetMark\find_breaking_point.py`)
+
+**🎯 Purpose**: Identifies system breaking point by testing progressively higher loads.
+
+**Key Features**:
+- ✅ Progressive load testing (incremental concurrent users)
+- ✅ Automatic breaking point detection (success rate < 95%)
+- ✅ Detailed error tracking (timeouts, connection errors, HTTP errors)
+- ✅ Comprehensive statistics for each load level
+- ✅ JSON report with all test results
+
+**Usage**:
+```bash
+python find_breaking_point.py \
+    --start 100 \
+    --max 500 \
+    --step 50 \
+    --requests 5 \
+    --url http://127.0.0.1:5000 \
+    --endpoint /attendance_stats \
+    --output breaking_point_results.json
+```
+
+**Parameters**:
+- `--start`: Starting number of concurrent users (default: 100)
+- `--max`: Maximum concurrent users to test (default: 1000)
+- `--step`: Increment step for concurrent users (default: 50)
+- `--requests`: Requests per user (default: 5)
+- `--url`: Server base URL (default: http://127.0.0.1:5000)
+- `--endpoint`: Endpoint to test (default: /attendance_stats)
+- `--output`: Output JSON file (default: breaking_point_results.json)
+
+**Output Files**:
+- JSON results: [`breaking_point_results.json`](https://github.com/Sujith8257/NetMark/blob/main/breaking_point_results.json) (project root)
+- Console output: Shows breaking point when detected
+
+**Code Structure**:
+```python
+class BreakingPointTester:
+    - make_request(): Single HTTP request with error handling
+    - test_load(): Test specific load level
+    - print_results(): Display results and detect breaking point
+```
+
+#### **3. Automated Test Suites**
+
+**Windows PowerShell** (`run_stress_tests.ps1`):
+- **Location**: Project root directory
+- **Purpose**: Runs multiple load tests with increasing concurrent users (5, 10, 20, 50, 100)
+- **Usage**: `.\run_stress_tests.ps1`
+- **Output**: Creates log files in `stress_test_logs/` and JSON results in project root
+
+**Linux/macOS Bash** (`run_stress_tests.sh`):
+- **Location**: Project root directory
+- **Purpose**: Same as PowerShell version, for Unix-like systems
+- **Usage**: `chmod +x run_stress_tests.sh && ./run_stress_tests.sh`
+- **Output**: Creates log files in `stress_test_logs/` and JSON results in project root
+
+#### **4. Server-Side Code** ([`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py))
+
+**📍 Location**: Project root directory (`D:\NetMark\Server_regNoSend.py`)
+
+**🎯 Stress Testing Features**:
+- ✅ Automatic response time tracking via `before_request` and `after_request` hooks
+- ✅ Thread-safe metrics storage
+- ✅ Stress test control endpoints
+- ✅ Scalability metrics and report generation
+
+**Relevant Code Sections**:
+- **Lines 22-30**: Metrics storage structure (`_scalability_metrics`)
+- **Lines 79-95**: Request/response hooks for automatic tracking
+- **Lines 379-429**: Stress test control endpoints (`/stress_test/start`, `/stress_test/stop`)
+- **Lines 431-465**: Metrics endpoint (`/scalability_metrics`)
+- **Lines 467-520**: Report generation (`/scalability_report`)
+- **Lines 524-560**: CSV export function (`_save_scalability_report`)
+
+**Key Functions**:
+```python
+@app.before_request
+def before_request():
+    # Start timing for each request
+
+@app.after_request  
+def after_request(response):
+    # Record response time and update metrics
+
+@app.route('/stress_test/start', methods=['POST'])
+def start_stress_test():
+    # Start tracking metrics
+
+@app.route('/scalability_metrics', methods=['GET'])
+def get_scalability_metrics():
+    # Return current metrics
+
+@app.route('/scalability_report', methods=['GET'])
+def generate_scalability_report():
+    # Generate comprehensive report
+```
 
 #### **Server-Side Metrics Endpoints**
 
@@ -1486,11 +1717,17 @@ This script tests progressively higher loads until the breaking point is identif
 
 ### 📚 Additional Resources
 
-- **`STRESS_TESTING_GUIDE.md`** - Complete stress testing guide
-- **`test_stress_testing.md`** - Quick test guide
+- **`STRESS_TESTING_GUIDE.md`** - Complete stress testing guide with methodology
+- **`test_stress_testing.md`** - Quick test guide for running tests
 - **`REVIEWER_RESPONSE_SCALABILITY.md`** - Comprehensive response to reviewer concerns
 - **`SCALABILITY_SUMMARY.md`** - Quick reference for scalability findings
-- **`find_breaking_point.py`** - Script to identify system breaking points
+- **[`load_test.py`](https://github.com/Sujith8257/NetMark/blob/main/load_test.py)** - Load testing script source code
+- **[`find_breaking_point.py`](https://github.com/Sujith8257/NetMark/blob/main/find_breaking_point.py)** - Breaking point analysis script source code
+- **[`run_stress_tests.ps1`](https://github.com/Sujith8257/NetMark/blob/main/run_stress_tests.ps1)** - Automated test suite (Windows)
+- **[`run_stress_tests.sh`](https://github.com/Sujith8257/NetMark/blob/main/run_stress_tests.sh)** - Automated test suite (Linux/macOS)
+- **[`stress_test_logs/`](https://github.com/Sujith8257/NetMark/tree/main/stress_test_logs)** - Directory containing all test execution logs
+- **[`breaking_point_results.json`](https://github.com/Sujith8257/NetMark/blob/main/breaking_point_results.json)** - Breaking point test results
+- **[`scalability_metrics.csv`](https://github.com/Sujith8257/NetMark/blob/main/scalability_metrics.csv)** - Server-side accumulated metrics
 
 ### ✅ Validation
 
@@ -1503,7 +1740,7 @@ This script tests progressively higher loads until the breaking point is identif
 - ✅ Controlled load testing with configurable parameters
 - ✅ Quantitative measurements (response time, throughput, error rates)
 - ✅ Multiple test scenarios (5, 10, 20, 50, 100, 150, 200, 250 concurrent users)
-- ✅ Breaking point analysis (`find_breaking_point.py`) - Identified breaking point at 250 users
+- ✅ Breaking point analysis ([`find_breaking_point.py`](https://github.com/Sujith8257/NetMark/blob/main/find_breaking_point.py)) - Identified breaking point at 250 users
 - ✅ Comprehensive reporting (CSV, JSON, logs)
 - ✅ Automated test suite (`run_stress_tests.ps1` / `run_stress_tests.sh`)
 - ✅ **Breaking point identified**: 250 concurrent users (94.56% success rate)
@@ -1601,11 +1838,11 @@ cd file_sender
 flutter pub get
 ```
 
-This installs all dependencies specified in `pubspec.yaml`.
+This installs all dependencies specified in [`pubspec.yaml`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/pubspec.yaml).
 
 ##### 3.4 Configure Server URL
 
-Edit `file_sender/lib/config.dart`:
+Edit [`file_sender/lib/config.dart`](https://github.com/Sujith8257/NetMark/blob/main/file_sender/lib/config.dart):
 
 ```dart
 static String serverUrl = 'http://YOUR_SERVER_IP:5000';
@@ -1753,10 +1990,10 @@ Expected: Filtered student list matching the query
 
 After running the system, verify these files exist in the root directory:
 
-- ✅ `user_data.csv`: Should contain uploaded class list
-- ✅ `verified_ids.csv`: Should contain attendance records
-- ✅ `ip_tracking.csv`: Should contain IP tracking data
-- ✅ `logs.csv`: Should contain face verification timing logs (after face verification cycles)
+- ✅ [`user_data.csv`](https://github.com/Sujith8257/NetMark/blob/main/user_data.csv): Should contain uploaded class list
+- ✅ [`verified_ids.csv`](https://github.com/Sujith8257/NetMark/blob/main/verified_ids.csv): Should contain attendance records
+- ✅ [`ip_tracking.csv`](https://github.com/Sujith8257/NetMark/blob/main/ip_tracking.csv): Should contain IP tracking data
+- ✅ [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv): Should contain face verification timing logs (after face verification cycles)
 
 ##### 7.2 Test Offline Functionality
 
@@ -1788,7 +2025,7 @@ After running the system, verify these files exist in the root directory:
 
 ##### 8.2 Port Configuration
 
-If port 5000 is busy, modify `Server_regNoSend.py`:
+If port 5000 is busy, modify [`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py):
 
 ```python
 if __name__ == '__main__':
@@ -1806,7 +2043,7 @@ Update `file_sender/lib/config.dart` accordingly.
 | Issue | Solution |
 |-------|----------|
 | `ModuleNotFoundError: No module named 'flask'` | Ensure virtual environment is activated and dependencies are installed |
-| `Address already in use` | Change port in `Server_regNoSend.py` or kill process using port 5000 |
+| `Address already in use` | Change port in [`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py) or kill process using port 5000 |
 | `CSV not uploaded yet` | Upload CSV file first using `/upload_csv` endpoint |
 
 ##### 9.2 Flutter Issues
@@ -1815,7 +2052,7 @@ Update `file_sender/lib/config.dart` accordingly.
 |-------|----------|
 | `flutter: command not found` | Add Flutter to PATH or use full path to Flutter binary |
 | `Failed to get dependencies` | Run `flutter pub get` in `file_sender/` directory |
-| `Unable to connect to server` | Verify server is running, check server URL in `config.dart`, ensure firewall allows connections. For Android emulator, use `10.0.2.2` instead of `127.0.0.1` |
+| `Unable to connect to server` | Verify server is running, check server URL in [`config.dart`](lib/config.dart), ensure firewall allows connections. For Android emulator, use `10.0.2.2` instead of `127.0.0.1` |
 
 ##### 9.3 Firebase Issues
 
@@ -1855,7 +2092,7 @@ curl -X POST -F "file=@test_class_list.csv" http://127.0.0.1:5000/upload_csv
 - [ ] Flask server starts successfully on port 5000
 - [ ] Flutter 3.24+ installed and `flutter doctor` passes
 - [ ] Flutter dependencies installed (`flutter pub get`)
-- [ ] Server URL configured in `config.dart`
+- [ ] Server URL configured in [`config.dart`](lib/config.dart)
 - [ ] Firebase configured (if using cloud features)
 - [ ] Sample CSV file created with correct format
 - [ ] Class list uploaded successfully
@@ -1896,7 +2133,7 @@ curl -X POST -F "file=@test_class_list.csv" http://127.0.0.1:5000/upload_csv
 3. 📱 **Students enter their Registration Number** in the Flutter app
 4. 👤 **Face verification** (optional): Students verify their identity using face recognition
 5. ✅ **Backend verifies the ID** and records attendance (timestamp + IP; duplicates blocked)
-6. 📝 **Performance logging**: Face verification timing is automatically logged to `logs.csv`
+6. 📝 **Performance logging**: Face verification timing is automatically logged to [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv)
 7. 📊 **Faculty/admin views stats** and student lists (present/absent + search)
 8. 📈 **Statistical analysis**: View performance metrics, baseline comparisons, and significance tests in Statistics Dashboard
 
@@ -1927,7 +2164,7 @@ The system includes comprehensive statistical analysis capabilities:
 - Performs statistical significance testing (z-tests)
 
 #### **Face Verification Logging**
-- Every face verification cycle is automatically logged to `logs.csv`
+- Every face verification cycle is automatically logged to [`logs.csv`](https://github.com/Sujith8257/NetMark/blob/main/logs.csv)
 - Logs include: Registration Number, Timestamp, Verification Time (seconds)
 - Used for performance analysis and statistical validation
 - Supports baseline comparisons and significance testing
@@ -1991,7 +2228,7 @@ Before deploying this system, ensure you have:
 | **"Invalid CSV format"** | Ensure headers are exactly `Registration Number` and `Name` |
 | **"CSV not uploaded yet" / empty student lookup** | Upload a CSV before calling lookup/mark endpoints |
 | **CORS issues (Flutter Web)** | Serve the web app from the same origin or add CORS handling in Flask |
-| **Port conflicts** | Change the port in `Server_regNoSend.py` if `5000` is busy |
+| **Port conflicts** | Change the port in [`Server_regNoSend.py`](https://github.com/Sujith8257/NetMark/blob/main/Server_regNoSend.py) if `5000` is busy |
 
 ### Getting Help
 
